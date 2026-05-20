@@ -1,0 +1,6 @@
+streamlit
+pandas
+pytz
+streamlit-autorefresh
+gspread
+google-auth
