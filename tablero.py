@@ -31,7 +31,7 @@ st.markdown(
     @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     .area-card {
         padding: clamp(8px, 1vmin, 12px); border-radius: 18px; border: 4px solid #333;
-        background-color: #1A1A1A; height: calc((100dvh - 7.4rem) / 2); margin: 0 0.1rem;
+        background-color: #1A1A1A; height: calc((100dvh - 9.2rem) / 2); margin: 0 0.1rem 0.6rem 0.1rem;
         display: flex; flex-direction: column; justify-content: space-between;
         position: relative; box-sizing: border-box; overflow: hidden;
     }
