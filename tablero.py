@@ -62,6 +62,12 @@ st.markdown(
         border-radius: 999px; font-size: 0.68vw; font-weight: 900;
         letter-spacing: 0.02em; text-transform: uppercase;
     }
+    .nota-moldeo-diferido {
+        position: absolute; top: 12px; left: 14px; max-width: 15vw;
+        color: #7fb3d5; font-size: 0.56vw; font-weight: 900;
+        line-height: 1.2; text-align: left; text-transform: uppercase;
+        opacity: 0.82;
+    }
     .estado-verde { background-color: #0f3b22; color: #2ecc71; border: 1px solid #2ecc71; }
     .estado-amarillo { background-color: #3f3508; color: #f1c40f; border: 1px solid #f1c40f; }
     .estado-rojo { background-color: #441111; color: #ff4444; border: 1px solid #ff4444; }
@@ -1194,16 +1200,17 @@ def main_piso():
                     else:
                         paro_html = '<div class="paro-alert paro-rojo">VAMOS ATRASADOS: sin paro registrado que lo justifique</div>'
 
-                if moldeo_diferidos_pausados:
-                    estado_corte_html += (
-                        '<div class="mini-pagina">VACIADO/DESMOLDEO EVALUABLES DESDE 15:00</div>'
-                    )
                 if moldeo_sin_exigibles and not hay_paro_real:
                     paro_html = (
                         '<div class="paro-alert paro-espera">'
                         'PROCESOS DIFERIDOS POR FUSION: se evaluan desde 15:00'
                         '</div>'
                     )
+                nota_moldeo_html = (
+                    '<div class="nota-moldeo-diferido">Vaciado/Desmoldeo desde 15:00</div>'
+                    if moldeo_diferidos_pausados
+                    else ""
+                )
 
                 estado_corte_html = "\n" + estado_corte_html
                 paro_html = "\n" + paro_html
@@ -1211,6 +1218,7 @@ def main_piso():
                 st.markdown(
                     f"""
                 <div class="area-card" style="border-color: {color_cuadro};">
+                    {nota_moldeo_html}
                     <div class="estado-badge {estado_clase}">{estado_texto}</div>
                     <div class="label-area">{area_nom} <span style="font-size:0.8vw; color:#444;">({b_nom})</span></div>
                     <div class="val-pct" style="color: {color_cuadro};">{pct_real_proceso:.1f}% <span style="font-size:2vw;">{flecha}</span></div>
