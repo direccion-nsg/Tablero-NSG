@@ -131,6 +131,9 @@ CORTES = [
     {"nombre": "14:00 PM (6h)", "label": "14:00", "base": 33.3, "aporte": 33.3},
     {"nombre": "17:00 PM (9h)", "label": "17:00", "base": 66.6, "aporte": 33.4},
 ]
+AREA_MOLDEO = "MOLDEO"
+HORA_INICIO_DIFERIDOS_MOLDEO = 15.0
+SUBPROCESOS_DIFERIDOS_MOLDEO = ("VACIADO", "DESMOLDEO", "DESMOLDE")
 FRASES_ESPERA_PROGRAMA = [
     "Cada pieza cuenta.",
     "La calidad empieza en cada proceso.",
@@ -201,6 +204,28 @@ def normalizar_fecha_serie(serie):
 
 def columnas_completas(diccionario):
     return all(valor is not None for valor in diccionario.values())
+
+
+def es_area_moldeo(area_nom):
+    return normalizar_clave(area_nom) == normalizar_clave(AREA_MOLDEO)
+
+
+def es_subproceso_diferido_moldeo(subproceso):
+    clave = normalizar_clave(subproceso)
+    return any(token in clave for token in SUBPROCESOS_DIFERIDOS_MOLDEO)
+
+
+def filtrar_subprocesos_exigibles_area(df_area, area_nom, t_dec):
+    if (
+        df_area.empty
+        or not es_area_moldeo(area_nom)
+        or t_dec >= HORA_INICIO_DIFERIDOS_MOLDEO
+        or "__BDD_SUBPROCESO" not in df_area.columns
+    ):
+        return df_area.copy(), False
+
+    mask_diferidos = df_area["__BDD_SUBPROCESO"].apply(es_subproceso_diferido_moldeo)
+    return df_area[~mask_diferidos].copy(), bool(mask_diferidos.any())
 
 
 def filtrar_bdd_activa(df_bdd, col_b):
@@ -789,23 +814,35 @@ def main_piso():
                 == normalizar_clave(area_nom)
             ].copy()
             if not df_area.empty:
+                df_area_calculo, moldeo_diferidos_pausados = filtrar_subprocesos_exigibles_area(
+                    df_area,
+                    area_nom,
+                    t_dec,
+                )
+                moldeo_sin_exigibles = moldeo_diferidos_pausados and df_area_calculo.empty
                 # --- CÁLCULO DE EFICIENCIA REAL ---
                 total_pzs = pd.to_numeric(
-                    df_area.groupby(col_p["pieza"])[col_p["total"]].first(),
+                    df_area_calculo.groupby(col_p["pieza"])[col_p["total"]].first(),
                     errors="coerce",
                 ).sum()
                 real_pzs = int(
                     pd.to_numeric(
-                        df_area.groupby(col_p["pieza"])[col_a["real"]].max(),
+                        df_area_calculo.groupby(col_p["pieza"])[col_a["real"]].max(),
                         errors="coerce",
                     ).sum()
                 )
 
                 # Porcentaje de avance real, calculado igual que Auditoria:
                 # promedio del % REAL de cada pieza + subproceso.
-                pct_real_proceso = round(
-                    pd.to_numeric(df_area["% REAL"], errors="coerce").fillna(0).mean(),
-                    1,
+                pct_real_proceso = (
+                    0.0
+                    if df_area_calculo.empty
+                    else round(
+                        pd.to_numeric(df_area_calculo["% REAL"], errors="coerce")
+                        .fillna(0)
+                        .mean(),
+                        1,
+                    )
                 )
 
                 # REGLA SOLICITADA: Avance sobre el ideal dinámico
@@ -890,7 +927,7 @@ def main_piso():
                     estado_corte_html = f'<div class="mini-pagina">EVALUANDO CORTE {corte_eval["label"]}</div>'
 
                 pct_real_corte = calcular_pct_corte_area(
-                    df_area,
+                    df_area_calculo,
                     df_a,
                     col_a,
                     col_p,
@@ -901,6 +938,10 @@ def main_piso():
                 )
                 if pct_real_corte is None:
                     pct_real_corte = max(0.0, min(aporte_corte, pct_real_proceso - base_corte))
+                if moldeo_sin_exigibles:
+                    ideal_ahora = 0.0
+                    meta_corte_ahora = 0.0
+                    pct_real_corte = 0.0
                 avance_corte = max(0.0, min(aporte_corte, pct_real_corte))
                 proporcion_avance = (
                     (avance_corte / meta_corte_ahora * 100)
@@ -936,6 +977,8 @@ def main_piso():
                     and proporcion_avance >= 90
                     and cumplimiento_acumulado < 90
                 )
+                if moldeo_sin_exigibles:
+                    ritmo_mostrado = 0.0
 
                 if indicador_color >= 90:
                     color_cuadro = "#2ecc71"
@@ -956,6 +999,10 @@ def main_piso():
                 if esperando_auditoria:
                     color_cuadro = "#607d8b"
                     estado_texto = "ESPERA AUD."
+                    estado_clase = "estado-espera"
+                if moldeo_sin_exigibles:
+                    color_cuadro = "#607d8b"
+                    estado_texto = "DIFERIDO"
                     estado_clase = "estado-espera"
 
                 cierre_turno = (
@@ -979,6 +1026,8 @@ def main_piso():
 
                 if esperando_auditoria:
                     flecha = "-"
+                elif moldeo_sin_exigibles:
+                    flecha = "-"
                 elif usar_ultima_auditoria_para_color:
                     flecha = "▲" if cumplimiento_auditoria_vigente >= 90 else "▼"
                 else:
@@ -986,7 +1035,7 @@ def main_piso():
                 esp_pzs = int(total_pzs * (ideal_ahora / 100))
 
                 # --- MINI TABLA (AVANCE POR PROCESO) ---
-                resumen = df_area[
+                resumen = df_area_calculo[
                     [col_p["pieza"], "__BDD_SUBPROCESO", col_p["total"], col_a["real"], "% REAL"]
                 ].copy()
                 resumen[col_p["total"]] = convertir_serie_numerica(
@@ -1144,6 +1193,17 @@ def main_piso():
                         paro_html = '<div class="paro-alert paro-amarillo">RIESGO DE ATRASO: sin paro registrado que lo justifique</div>'
                     else:
                         paro_html = '<div class="paro-alert paro-rojo">VAMOS ATRASADOS: sin paro registrado que lo justifique</div>'
+
+                if moldeo_diferidos_pausados:
+                    estado_corte_html += (
+                        '<div class="mini-pagina">VACIADO/DESMOLDEO EVALUABLES DESDE 15:00</div>'
+                    )
+                if moldeo_sin_exigibles and not hay_paro_real:
+                    paro_html = (
+                        '<div class="paro-alert paro-espera">'
+                        'PROCESOS DIFERIDOS POR FUSION: se evaluan desde 15:00'
+                        '</div>'
+                    )
 
                 estado_corte_html = "\n" + estado_corte_html
                 paro_html = "\n" + paro_html
