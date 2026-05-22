@@ -16,42 +16,48 @@ st.markdown(
     <style>
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .stApp { background-color: #0E1117; }
+    .block-container {
+        max-width: 100% !important;
+        padding: 0.55rem 1rem 0.35rem 1rem !important;
+    }
+    [data-testid="stVerticalBlock"] { gap: 0.55rem !important; }
+    [data-testid="stHorizontalBlock"] { gap: 0.75rem !important; }
     @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     .area-card {
-        padding: 12px; border-radius: 20px; border: 4px solid #333;
-        background-color: #1A1A1A; height: 56vh; margin-bottom: 10px;
+        padding: clamp(8px, 1vmin, 12px); border-radius: 18px; border: 4px solid #333;
+        background-color: #1A1A1A; height: calc((100vh - 2.6rem) / 2); margin-bottom: 0;
         display: flex; flex-direction: column; justify-content: space-between;
-        position: relative;
+        position: relative; box-sizing: border-box; overflow: hidden;
     }
-    .label-area { font-size: 2.2vw; font-weight: 800; color: white; text-align: center; text-transform: uppercase; }
-    .val-pct { font-size: 5.8vw; font-weight: 900; text-align: center; margin: -5px 0; line-height: 1; }
-    .bar-container { width: 100%; background-color: #262626; border-radius: 6px; height: 20px; margin-bottom: 10px; position: relative; border: 1px solid #555; overflow: hidden; }
+    .label-area { font-size: clamp(20px, 2.2vmin, 34px); font-weight: 800; color: white; text-align: center; text-transform: uppercase; }
+    .val-pct { font-size: clamp(48px, 7vmin, 92px); font-weight: 900; text-align: center; margin: -4px 0; line-height: 0.95; }
+    .bar-container { width: 100%; background-color: #262626; border-radius: 6px; height: clamp(12px, 1.8vmin, 20px); margin-bottom: clamp(4px, 0.8vmin, 10px); position: relative; border: 1px solid #555; overflow: hidden; }
     .bar-fill-ideal { background-color: #455a64; height: 100%; }
     .bar-fill-real { height: 100%; transition: width 0.8s; }
-    .label-meta { font-size: 0.9vw; color: #9da8ad; font-weight: 900; display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .label-meta { font-size: clamp(11px, 1.25vmin, 16px); color: #9da8ad; font-weight: 900; display: flex; justify-content: space-between; margin-bottom: 3px; }
     .mini-tabla-wrap {
-        height: 14vh; overflow: hidden; margin-top: 6px; padding-right: 4px;
+        height: 12vh; overflow: hidden; margin-top: clamp(2px, 0.6vmin, 6px); padding-right: 4px;
         position: relative;
     }
     .mini-tabla-wrap::-webkit-scrollbar { width: 6px; }
     .mini-tabla-wrap::-webkit-scrollbar-thumb { background: #444; border-radius: 6px; }
     .mini-track { animation: miniTrack 8s steps(1) infinite; }
     .mini-track-unica { animation: none; }
-    .mini-page { height: 14vh; }
+    .mini-page { height: 12vh; }
     @keyframes miniTrack {
         from { transform: translateY(0); }
         to { transform: translateY(var(--shift)); }
     }
-    .mini-tabla { font-size: 1.32vw; color: #BBB; width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .mini-tabla td { padding: 10px 0 12px 0; border-bottom: 1px solid #252525; vertical-align: top; }
+    .mini-tabla { font-size: clamp(14px, 1.55vmin, 22px); color: #BBB; width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .mini-tabla td { padding: clamp(5px, 0.9vmin, 10px) 0 clamp(6px, 1vmin, 12px) 0; border-bottom: 1px solid #252525; vertical-align: top; }
     .mini-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
     .mini-piece { color: #F2F2F2; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mini-sub { color: #d6e4ef; font-size: 1.1vw; font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 6px; }
-    .mini-real { color: #b4c9d8; font-size: 1.1vw; font-weight: 900; text-align: right; }
-    .mini-pagina { font-size: 0.65vw; color: #555; text-align: right; font-weight: bold; margin-top: 2px; }
+    .mini-sub { color: #d6e4ef; font-size: clamp(12px, 1.3vmin, 18px); font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: clamp(2px, 0.6vmin, 6px); }
+    .mini-real { color: #b4c9d8; font-size: clamp(12px, 1.3vmin, 18px); font-weight: 900; text-align: right; }
+    .mini-pagina { font-size: clamp(8px, 0.8vmin, 12px); color: #555; text-align: right; font-weight: bold; margin-top: 2px; }
     .paro-alert { 
-        padding: 10px; border-radius: 10px; font-size: 0.9vw; font-weight: bold;
-        text-align: center; margin-top: 10px; animation: parpadeo 2s infinite; 
+        padding: clamp(6px, 0.9vmin, 10px); border-radius: 10px; font-size: clamp(11px, 1.15vmin, 16px); font-weight: bold;
+        text-align: center; margin-top: clamp(4px, 0.8vmin, 10px); animation: parpadeo 2s infinite; 
     }
     .paro-rojo { background-color: #441111; color: #ff4444; border: 1px solid #ff4444; }
     .paro-amarillo { background-color: #3f3508; color: #f1c40f; border: 1px solid #f1c40f; }
@@ -59,12 +65,12 @@ st.markdown(
     .paro-espera { background-color: #102b3a; color: #7fb3d5; border: 1px solid #7fb3d5; }
     .estado-badge {
         position: absolute; top: 10px; right: 12px; padding: 5px 10px;
-        border-radius: 999px; font-size: 0.68vw; font-weight: 900;
+        border-radius: 999px; font-size: clamp(8px, 0.8vmin, 12px); font-weight: 900;
         letter-spacing: 0.02em; text-transform: uppercase;
     }
     .nota-moldeo-diferido {
         position: absolute; top: 12px; left: 14px; max-width: 15vw;
-        color: #7fb3d5; font-size: 0.56vw; font-weight: 900;
+        color: #7fb3d5; font-size: clamp(8px, 0.68vmin, 11px); font-weight: 900;
         line-height: 1.2; text-align: left; text-transform: uppercase;
         opacity: 0.82;
     }
@@ -1114,7 +1120,7 @@ def main_piso():
                         f'</div>'
                     )
                 clase_track = "mini-track mini-track-unica" if total_paginas == 1 else "mini-track"
-                shift_vh = -14 * total_paginas
+                shift_vh = -12 * total_paginas
                 duracion = total_paginas * 8
                 animacion = (
                     "animation:none;"
@@ -1220,7 +1226,7 @@ def main_piso():
 {nota_moldeo_html}
 <div class="estado-badge {estado_clase}">{estado_texto}</div>
 <div class="label-area">{area_nom} <span style="font-size:0.8vw; color:#444;">({b_nom})</span></div>
-<div class="val-pct" style="color: {color_cuadro};">{pct_real_proceso:.1f}% <span style="font-size:2vw;">{flecha}</span></div>
+<div class="val-pct" style="color: {color_cuadro};">{pct_real_proceso:.1f}% <span style="font-size:2vmin;">{flecha}</span></div>
 <div>
 <div class="label-meta"><span>DEBERIAMOS LLEVAR: {ideal_ahora:.1f}%</span><span>{esp_pzs} PZS</span></div>
 <div class="bar-container"><div class="bar-fill-ideal" style="width: {ideal_ahora}%;"></div></div>
