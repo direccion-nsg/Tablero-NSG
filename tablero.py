@@ -1216,26 +1216,24 @@ def main_piso():
                 paro_html = "\n" + paro_html
 
                 st.markdown(
-                    f"""
-                <div class="area-card" style="border-color: {color_cuadro};">
-                    {nota_moldeo_html}
-                    <div class="estado-badge {estado_clase}">{estado_texto}</div>
-                    <div class="label-area">{area_nom} <span style="font-size:0.8vw; color:#444;">({b_nom})</span></div>
-                    <div class="val-pct" style="color: {color_cuadro};">{pct_real_proceso:.1f}% <span style="font-size:2vw;">{flecha}</span></div>
-                    <div>
-                        <div class="label-meta"><span>DEBERIAMOS LLEVAR: {ideal_ahora:.1f}%</span><span>{esp_pzs} PZS</span></div>
-                        <div class="bar-container"><div class="bar-fill-ideal" style="width: {ideal_ahora}%;"></div></div>
-                        <div class="label-meta"><span>LLEVAMOS: {pct_real_proceso:.1f}%</span><span>RITMO AUDITADO: {ritmo_mostrado:.0f}%</span></div>
-                        <div class="bar-container"><div class="bar-fill-real" style="width: {pct_real_proceso}%; background-color: {color_cuadro};"></div></div>
-                    </div>
-                    <div class="mini-tabla-wrap">
-                        {mini_tabla_html}
-                    </div>
-                    {estado_corte_html}
-                    {pagina_html}
-                    {paro_html}
-                </div>
-                """,
+                    f"""<div class="area-card" style="border-color: {color_cuadro};">
+{nota_moldeo_html}
+<div class="estado-badge {estado_clase}">{estado_texto}</div>
+<div class="label-area">{area_nom} <span style="font-size:0.8vw; color:#444;">({b_nom})</span></div>
+<div class="val-pct" style="color: {color_cuadro};">{pct_real_proceso:.1f}% <span style="font-size:2vw;">{flecha}</span></div>
+<div>
+<div class="label-meta"><span>DEBERIAMOS LLEVAR: {ideal_ahora:.1f}%</span><span>{esp_pzs} PZS</span></div>
+<div class="bar-container"><div class="bar-fill-ideal" style="width: {ideal_ahora}%;"></div></div>
+<div class="label-meta"><span>LLEVAMOS: {pct_real_proceso:.1f}%</span><span>RITMO AUDITADO: {ritmo_mostrado:.0f}%</span></div>
+<div class="bar-container"><div class="bar-fill-real" style="width: {pct_real_proceso}%; background-color: {color_cuadro};"></div></div>
+</div>
+<div class="mini-tabla-wrap">
+{mini_tabla_html}
+</div>
+{estado_corte_html}
+{pagina_html}
+{paro_html}
+</div>""",
                     unsafe_allow_html=True,
                 )
             else:
