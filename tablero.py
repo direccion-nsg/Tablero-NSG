@@ -21,12 +21,17 @@ st.markdown(
         padding: 0.25rem 0.8rem 0.2rem 0.8rem !important;
     }
     [data-testid="stVerticalBlock"] { gap: 0.45rem !important; }
-    [data-testid="stHorizontalBlock"] { gap: 0.55rem !important; }
+    [data-testid="stHorizontalBlock"] { gap: 1rem !important; }
+    [data-testid="column"] {
+        min-width: 0 !important;
+        padding-left: 0.22rem !important;
+        padding-right: 0.22rem !important;
+    }
     [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
     @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     .area-card {
         padding: clamp(8px, 1vmin, 12px); border-radius: 18px; border: 4px solid #333;
-        background-color: #1A1A1A; height: calc((100dvh - 8.2rem) / 2); margin-bottom: 0;
+        background-color: #1A1A1A; height: calc((100dvh - 7.4rem) / 2); margin: 0 0.1rem;
         display: flex; flex-direction: column; justify-content: space-between;
         position: relative; box-sizing: border-box; overflow: hidden;
     }
