@@ -18,14 +18,15 @@ st.markdown(
     .stApp { background-color: #0E1117; }
     .block-container {
         max-width: 100% !important;
-        padding: 0.55rem 1rem 0.35rem 1rem !important;
+        padding: 0.25rem 0.8rem 0.2rem 0.8rem !important;
     }
-    [data-testid="stVerticalBlock"] { gap: 0.55rem !important; }
-    [data-testid="stHorizontalBlock"] { gap: 0.75rem !important; }
+    [data-testid="stVerticalBlock"] { gap: 0.45rem !important; }
+    [data-testid="stHorizontalBlock"] { gap: 0.55rem !important; }
+    [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
     @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     .area-card {
         padding: clamp(8px, 1vmin, 12px); border-radius: 18px; border: 4px solid #333;
-        background-color: #1A1A1A; height: calc((100vh - 2.6rem) / 2); margin-bottom: 0;
+        background-color: #1A1A1A; height: calc((100dvh - 6.4rem) / 2); margin-bottom: 0;
         display: flex; flex-direction: column; justify-content: space-between;
         position: relative; box-sizing: border-box; overflow: hidden;
     }
