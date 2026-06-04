@@ -1638,10 +1638,6 @@ def main_piso():
     ahora = ahora_local()
     fecha_hoy = ahora.date()
 
-    # Pre-calentamiento: carga calidad en background con TTL de 5 min
-    cargar_datos_calidad()
-    cargar_datos_vaciado()
-
     # --- ENRUTADOR SECUENCIAL POR SESIÓN ---
     secuencia_vistas = [
         "cumplimiento",
