@@ -180,18 +180,28 @@ ID_LIBRO = "13ZF5TXwgEZSlrODQFF43Rvs4JmB19s6V0KNV1l72RHA"
 ID_LIBRO_PROD = "1hXxm3yOx7lwzbDuUAUauKl-VoW7L-5UdfkFbjYg-s7g"
 ID_LIBRO_CALIDAD = "1-u-rZ-If5NWksvG1OPexbu7PW-DZo4FQLu5WLskwdqQ"
 DEFECTO_A_AREA = {
-    "FISURA": "MOLDEO", "RECHUPE": "MOLDEO", "MAL LLENADO": "MOLDEO",
-    "CAIDA DE ARENA": "MOLDEO", "SOBREMATERIAL": "MOLDEO", "ARRASTRE": "MOLDEO",
-    "DESPLAZAMIENTO": "MOLDEO", "POROSIDAD": "MOLDEO",
-    "SIN CORAZON": "MOLDEO", "SIN VARILLA": "MOLDEO",
-    "ESMERIL": "CORTE", "CORTE": "CORTE", "BARRENADO": "CORTE",
+    "FISURA": "MOLDEO",
+    "RECHUPE": "MOLDEO",
+    "MAL LLENADO": "MOLDEO",
+    "CAIDA DE ARENA": "MOLDEO",
+    "SOBREMATERIAL": "MOLDEO",
+    "ARRASTRE": "MOLDEO",
+    "DESPLAZAMIENTO": "MOLDEO",
+    "POROSIDAD": "MOLDEO",
+    "SIN CORAZON": "MOLDEO",
+    "SIN VARILLA": "MOLDEO",
+    "ESMERIL": "CORTE",
+    "CORTE": "CORTE",
+    "BARRENADO": "CORTE",
 }
 TIMEZONE = "America/Mexico_City"
 AREAS_PISO = ["MOLDEO", "CORAZONES", "CORTE", "ENSAMBLE"]
 REFRESH_INTERVAL_MS = 30 * 1000  # Rotación optimizada a cada 30 segundos
 MINI_FILAS_POR_PAGINA = 1
-PROD_ROWS_POR_PAGINA = 4   # filas visibles por página en tablas gigantes
-PROD_SEGS_POR_PAGINA = 15  # segundos por página — 2 páginas = 30s = exactamente un slot de rotación
+PROD_ROWS_POR_PAGINA = 4  # filas visibles por página en tablas gigantes
+PROD_SEGS_POR_PAGINA = (
+    15  # segundos por página — 2 páginas = 30s = exactamente un slot de rotación
+)
 RESPALDO_DIR = Path(".respaldo_tablero")
 CORTES = [
     {"nombre": "11:00 AM (3h)", "label": "11:00", "base": 0.0, "aporte": 33.3},
@@ -201,11 +211,13 @@ CORTES = [
 AREA_MOLDEO = "MOLDEO"
 HORA_INICIO_DIFERIDOS_MOLDEO = 15.0
 SUBPROCESOS_DIFERIDOS_MOLDEO = ("VACIADO", "DESMOLDEO", "DESMOLDE")
-NOMBRES_LIDERES = frozenset([
-    "JOSÉ ANTONIO REYES RUBIO",
-    "LUIS DAVID ESPINOSA TORRES",
-    "ARELI PALOMA FLORES GARFIAS",
-])
+NOMBRES_LIDERES = frozenset(
+    [
+        "JOSÉ ANTONIO REYES RUBIO",
+        "LUIS DAVID ESPINOSA TORRES",
+        "ARELI PALOMA FLORES GARFIAS",
+    ]
+)
 FRASES_ESPERA_PROGRAMA = [
     "Cada pieza cuenta.",
     "La calidad empieza en cada proceso.",
@@ -422,10 +434,14 @@ def calcular_pct_corte_area(
     if df_a_area.empty:
         return 0.0
 
-    df_a_area[col_a["real"]] = convertir_serie_numerica(df_a_area[col_a["real"]]).fillna(0)
+    df_a_area[col_a["real"]] = convertir_serie_numerica(
+        df_a_area[col_a["real"]]
+    ).fillna(0)
 
     llave_base = df_area[[col_p["pieza"], "__BDD_SUBPROCESO", col_p["total"]]].copy()
-    llave_base[col_p["total"]] = convertir_serie_numerica(llave_base[col_p["total"]]).fillna(0)
+    llave_base[col_p["total"]] = convertir_serie_numerica(
+        llave_base[col_p["total"]]
+    ).fillna(0)
 
     df_actual = (
         df_a_area[df_a_area[col_a["corte"]] == corte_actual]
@@ -471,7 +487,9 @@ def calcular_pct_corte_area(
     total_seguro = convertir_serie_numerica(df_corte[col_p["total"]]).fillna(0)
     pct_corte = pd.Series(0.0, index=df_corte.index)
     mask_total = total_seguro > 0
-    pct_corte.loc[mask_total] = aporte_real.loc[mask_total] / total_seguro.loc[mask_total] * 100
+    pct_corte.loc[mask_total] = (
+        aporte_real.loc[mask_total] / total_seguro.loc[mask_total] * 100
+    )
     return round(float(pct_corte.mean()), 1)
 
 
@@ -567,7 +585,9 @@ def corte_con_captura_area(df_a, col_a, area_nom, fecha_hoy, corte_nombre):
     if df_area.empty:
         return False
 
-    real_capturado = convertir_serie_numerica(df_area[col_a["real"]]).fillna(0).gt(0).any()
+    real_capturado = (
+        convertir_serie_numerica(df_area[col_a["real"]]).fillna(0).gt(0).any()
+    )
     if real_capturado:
         return True
 
@@ -630,7 +650,9 @@ def corte_completo_area(df_area, df_a, col_a, col_p, area_nom, fecha_hoy, corte_
             normalizar_clave(fila[col_a["pieza"]]),
             normalizar_clave(fila[col_a["subproceso"]]),
         )
-        for _, fila in df_a_area[[col_a["pieza"], col_a["subproceso"]]].dropna(how="any").iterrows()
+        for _, fila in df_a_area[[col_a["pieza"], col_a["subproceso"]]]
+        .dropna(how="any")
+        .iterrows()
     }
     return esperadas.issubset(auditadas)
 
@@ -668,7 +690,9 @@ def obtener_datos_unificados(df_aud, df_prog, df_bdd, col_p, col_b, fecha):
             "fecha": encontrar_columna(df_aud, ["FECHA"]),
             "pieza": encontrar_columna(df_aud, ["PIEZA"]),
             "subproceso": encontrar_columna(
-                df_aud, ["SUBPROCESO", "SUB PROCESO", "SUB_PROCESO"], contiene_todos=["SUB", "CESO"]
+                df_aud,
+                ["SUBPROCESO", "SUB PROCESO", "SUB_PROCESO"],
+                contiene_todos=["SUB", "CESO"],
             ),
             "real": encontrar_columna(df_aud, ["REAL"]),
             "corte": encontrar_columna(df_aud, ["CORTE"]),
@@ -782,11 +806,32 @@ def clasificar_colaborador_area(row, col_area, col_actividad):
 
     if col_actividad and col_actividad in row and str(row[col_actividad]).strip():
         val = normalizar_clave(row[col_actividad])
-        if any(x in val for x in ["MOLDEO", "DESMOLDEO", "DESMOLDE", "VACIADO", "ADOBES", "ARENA", "MOLER"]):
+        if any(
+            x in val
+            for x in [
+                "MOLDEO",
+                "DESMOLDEO",
+                "DESMOLDE",
+                "VACIADO",
+                "ADOBES",
+                "ARENA",
+                "MOLER",
+            ]
+        ):
             return "MOLDEO Y CORAZONES"
         if any(x in val for x in ["CORTE", "LIJADO", "ESMERIL", "REBABA"]):
             return "CORTE"
-        if any(x in val for x in ["ENSAMBLE", "LIMADO", "MOTOTOOL", "DISCO", "EMPLAYADO", "ENGRASADO"]):
+        if any(
+            x in val
+            for x in [
+                "ENSAMBLE",
+                "LIMADO",
+                "MOTOTOOL",
+                "DISCO",
+                "EMPLAYADO",
+                "ENGRASADO",
+            ]
+        ):
             return "ENSAMBLE"
     return "OTROS"
 
@@ -812,24 +857,25 @@ def _aporte_bono_html(val):
     """Badge con el aporte calculado — misma fórmula que RRHH usa en nómina."""
     aporte = _calcular_aporte_bono(val)
     _s = "font-weight:900;white-space:nowrap;border-radius:8px;padding:5px 14px;font-size:clamp(13px,1.5vmin,22px);"
-    if aporte >= 30.1:   # prod ≥ ~88% → total ≥ 90.1% → 100% del bono
+    if aporte >= 30.1:  # prod ≥ ~88% → total ≥ 90.1% → 100% del bono
         bg, fg, brd = "#0f3b22", "#2ecc71", "#2ecc71"
     elif aporte >= 15.0:  # prod ≥ 70% → total ≥ 75% → 50% del bono
         bg, fg, brd = "#3f3508", "#f1c40f", "#f1c40f"
-    else:                 # total < 75% incluso con asistencia perfecta → sin bono
+    else:  # total < 75% incluso con asistencia perfecta → sin bono
         bg, fg, brd = "#441111", "#ff4444", "#ff4444"
     return f'<span style="{_s}background:{bg};color:{fg};border:2px solid {brd};">APORTE: {aporte:.1f}%</span>'
 
 
-_FILA_PX = 110                                           # altura td tabla diaria — igual que semanal para misma altura de card
-_PAGINA_PX = _FILA_PX * PROD_ROWS_POR_PAGINA            # 440 px por página diaria
-_FILA_DOBLE_PX = 110                                     # altura td tabla semanal (2 líneas: nombre + métricas)
+_FILA_PX = 110  # altura td tabla diaria — igual que semanal para misma altura de card
+_PAGINA_PX = _FILA_PX * PROD_ROWS_POR_PAGINA  # 440 px por página diaria
+_FILA_DOBLE_PX = 110  # altura td tabla semanal (2 líneas: nombre + métricas)
 _PAGINA_DOBLE_PX = _FILA_DOBLE_PX * PROD_ROWS_POR_PAGINA  # 440 px por página semanal
 
 
 def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
     """Card HTML con paginación snap automática — sin scroll manual, apta para kiosco.
-    ranking_vals: (nom, val) diaria | (nom, val, aporte_html, asistencia_str) semanal."""
+    ranking_vals: (nom, val) diaria | (nom, val, aporte_html, asistencia_str) semanal.
+    """
     semanal = bool(ranking_vals) and len(ranking_vals[0]) == 4
     pagina_h = _PAGINA_DOBLE_PX if semanal else _PAGINA_PX
 
@@ -839,7 +885,7 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
             f'<div class="prod-card-title" style="color:{color_titulo};">{titulo}</div>'
             f'<div style="text-align:center;color:#555;padding:40px 20px;'
             f'font-size:clamp(20px,2vmin,30px);">Sin registros</div>'
-            f'</div>'
+            f"</div>"
         )
 
     paginas_html = []
@@ -849,19 +895,19 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
             # Línea 1: nombre izq + asistencia der | Línea 2: % prod izq + badge aporte der
             filas = "".join(
                 f'<tr><td style="height:{_FILA_DOBLE_PX}px!important;padding:0 20px;'
-                f'vertical-align:middle;box-sizing:border-box;overflow:hidden;'
+                f"vertical-align:middle;box-sizing:border-box;overflow:hidden;"
                 f'border-bottom:2px solid #1E293B;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:baseline;">'
                 f'<span style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
                 f'font-size:clamp(20px,2.3vmin,34px);">{nom}</span>'
                 f'<span style="color:#94A3B8;white-space:nowrap;margin-left:12px;'
                 f'font-size:clamp(14px,1.6vmin,22px);font-weight:700;">{asistencia}</span>'
-                f'</div>'
+                f"</div>"
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'
                 f'<span style="color:{_color_prod(val)};font-weight:900;'
                 f'font-size:clamp(18px,2vmin,30px);">{val:.1f}%</span>'
-                f'{aporte}'
-                f'</div></td></tr>'
+                f"{aporte}"
+                f"</div></td></tr>"
                 for nom, val, aporte, asistencia in grupo
             )
         else:
@@ -870,13 +916,13 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
                 f'<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{nom}</span>'
                 f'<span style="color:{_color_prod(val)};white-space:nowrap;margin-left:16px;">{val:.1f}%</span>'
-                f'</div></td></tr>'
+                f"</div></td></tr>"
                 for nom, val in grupo
             )
         paginas_html.append(
             f'<div style="height:{pagina_h}px;">'
             f'<table class="table-piso-gigante"><tbody>{filas}</tbody></table>'
-            f'</div>'
+            f"</div>"
         )
 
     num_pags = len(paginas_html)
@@ -889,15 +935,19 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
 
     thead = (
         f'<thead><tr><th style="white-space:nowrap;">OPERADOR · EFICIENCIA Y APORTE SEMANAL</th></tr></thead>'
-        if semanal else
-        f'<thead><tr><th style="white-space:nowrap;">OPERADOR - EFICIENCIA DEL DÍA</th></tr></thead>'
+        if semanal
+        else f'<thead><tr><th style="white-space:nowrap;">OPERADOR - EFICIENCIA DEL DÍA</th></tr></thead>'
     )
 
     pie_html = (
-        f'<div style="margin-top:10px;padding:10px 16px;background:#1E293B;border-radius:10px;'
-        f'font-size:clamp(13px,1.4vmin,19px);color:#94A3B8;font-weight:700;text-align:center;">'
-        f'{pie_nota}</div>'
-    ) if pie_nota else ""
+        (
+            f'<div style="margin-top:10px;padding:10px 16px;background:#1E293B;border-radius:10px;'
+            f'font-size:clamp(13px,1.4vmin,19px);color:#94A3B8;font-weight:700;text-align:center;">'
+            f"{pie_nota}</div>"
+        )
+        if pie_nota
+        else ""
+    )
 
     return (
         f'<div class="prod-card">'
@@ -906,9 +956,9 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
         f'<div class="prod-piso-wrap" style="height:{pagina_h}px;">'
         f'<div style="--prod-shift:{shift_px}px; {anim}">'
         f'{"".join(paginas_html)}'
-        f'</div></div>'
-        f'{pie_html}'
-        f'</div>'
+        f"</div></div>"
+        f"{pie_html}"
+        f"</div>"
     )
 
 
@@ -930,14 +980,19 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         col_area = encontrar_columna(df_prod, ["AREA", "PROCESO"])
 
         if not col_fecha or not col_colab or not col_eficiencia:
-            st.error("Columnas requeridas no encontradas (FECHA, COLABORADOR, PRODUCTIVIDAD).")
+            st.error(
+                "Columnas requeridas no encontradas (FECHA, COLABORADOR, PRODUCTIVIDAD)."
+            )
             return
 
         df_prod["__FECHA_DT"] = pd.to_datetime(
-            normalizar_fecha_serie(df_prod[col_fecha]), format="%d/%m/%Y", errors="coerce"
+            normalizar_fecha_serie(df_prod[col_fecha]),
+            format="%d/%m/%Y",
+            errors="coerce",
         ).dt.date
         df_prod["__PROD_NUM"] = pd.to_numeric(
-            df_prod[col_eficiencia].astype(str).str.replace("%", "").str.strip(), errors="coerce"
+            df_prod[col_eficiencia].astype(str).str.replace("%", "").str.strip(),
+            errors="coerce",
         ).fillna(0.0)
         df_prod["__AREA_PISO"] = df_prod.apply(
             lambda r: clasificar_colaborador_area(r, col_area, col_actividad), axis=1
@@ -947,7 +1002,12 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         lideres_norm = {normalizar_clave(n) for n in NOMBRES_LIDERES}
         df_area_total = df_prod[
             (df_prod["__AREA_PISO"] == area_objetivo)
-            & (~df_prod[col_colab].astype(str).apply(normalizar_clave).isin(lideres_norm))
+            & (
+                ~df_prod[col_colab]
+                .astype(str)
+                .apply(normalizar_clave)
+                .isin(lideres_norm)
+            )
         ].copy()
 
         inicio_sem, fin_sem = calcular_fechas_semana_corta(fecha_hoy)
@@ -955,13 +1015,17 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
 
         # ── Detección de festivos: días donde AL MENOS UN operador de TODA LA PLANTA registró
         rango_laborable = [
-            d.date() for d in pd.date_range(str(inicio_sem), str(corte_sem)) if d.weekday() < 5
+            d.date()
+            for d in pd.date_range(str(inicio_sem), str(corte_sem))
+            if d.weekday() < 5
         ]
         fechas_con_registro = set(
             df_prod[
                 (df_prod["__FECHA_DT"] >= inicio_sem)
                 & (df_prod["__FECHA_DT"] <= corte_sem)
-            ]["__FECHA_DT"].dropna().unique()
+            ]["__FECHA_DT"]
+            .dropna()
+            .unique()
         )
         fechas_activas_planta = [d for d in rango_laborable if d in fechas_con_registro]
         total_dias_semana = max(len(fechas_activas_planta), 1)
@@ -974,9 +1038,7 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
 
         # Días reales trabajados por operador (antes del clip y del reindexado)
         dias_por_op = (
-            df_area_sem_raw.groupby(col_colab)["__FECHA_DT"]
-            .nunique()
-            .to_dict()
+            df_area_sem_raw.groupby(col_colab)["__FECHA_DT"].nunique().to_dict()
         )
 
         # Aplicar límite 100%
@@ -984,23 +1046,20 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         df_area_sem_raw["__PROD_NUM"] = df_area_sem_raw["__PROD_NUM"].clip(upper=100.0)
         df_hoy = df_hoy_raw
 
-        # Reindexar semana: ausencias = 0.0 (días festivos ya excluidos del índice)
-        if fechas_activas_planta and not df_area_sem_raw.empty:
-            ops_area = df_area_sem_raw[col_colab].unique()
-            midx = pd.MultiIndex.from_product(
-                [ops_area, fechas_activas_planta], names=[col_colab, "__FECHA_DT"]
-            )
-            df_semana = (
-                df_area_sem_raw.groupby([col_colab, "__FECHA_DT"])["__PROD_NUM"]
-                .mean()
-                .reindex(midx, fill_value=0.0)
-                .reset_index()
+        prod_lider_hoy = df_hoy["__PROD_NUM"].mean() if not df_hoy.empty else 0.0
+
+        df_diario_op = (
+            df_area_sem_raw.groupby([col_colab, "__FECHA_DT"])["__PROD_NUM"]
+            .mean()
+            .reset_index()
+        )
+        df_diario_activo = df_diario_op[df_diario_op["__PROD_NUM"] > 0]
+        if not df_diario_activo.empty:
+            prod_lider_sem = (
+                df_diario_activo.groupby(col_colab)["__PROD_NUM"].mean().mean()
             )
         else:
-            df_semana = df_area_sem_raw.copy()
-
-        prod_lider_hoy = df_hoy["__PROD_NUM"].mean() if not df_hoy.empty else 0.0
-        prod_lider_sem = df_semana["__PROD_NUM"].mean() if not df_semana.empty else 0.0
+            prod_lider_sem = 0.0
 
         def _box_style(fg):
             if fg == "#2ecc71":
@@ -1068,10 +1127,7 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
                     )
                     for nom, val in ranking
                 ]
-            return [
-                (f"{nom} 🔥" if val == 100.0 else nom, val)
-                for nom, val in ranking
-            ]
+            return [(f"{nom} 🔥" if val == 100.0 else nom, val) for nom, val in ranking]
 
         with c1:
             st.markdown(
@@ -1086,7 +1142,7 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         with c2:
             st.markdown(
                 _tabla_paginada_html(
-                    _ranking(df_semana, con_aporte=True),
+                    _ranking(df_area_sem_raw, con_aporte=True),
                     f'📅 CÓMO VA MI SEMANA ({inicio_sem.strftime("%d/%m")} — {fin_sem.strftime("%d/%m")})',
                     "#3B82F6",
                 ),
@@ -1098,44 +1154,55 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
 
 
 # --- 5. CALIDAD ---
-def cargar_datos_vaciado(fecha_hoy):
+_TTL_CALIDAD = 300  # 5 minutos — refresca capturas extraordinarias sin martillar la API
+
+
+def _cache_valido(clave_ts):
+    ts = st.session_state.get(clave_ts, 0)
+    return (datetime.now().timestamp() - ts) < _TTL_CALIDAD
+
+
+def cargar_datos_vaciado():
     clave = "df_vaciado"
-    clave_fecha = "df_vaciado_fecha"
+    clave_ts = "df_vaciado_ts"
     if (
-        st.session_state.get(clave_fecha) == str(fecha_hoy)
+        _cache_valido(clave_ts)
         and clave in st.session_state
         and not st.session_state[clave].empty
     ):
         return st.session_state[clave]
     df = leer_datos_seguro(ID_LIBRO_CALIDAD, "VACIADO", header_row=0)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return st.session_state.get(clave, pd.DataFrame())
     col_fecha = df.columns[0]
-    col_total = next((c for c in df.columns if "TOTAL" in str(c).upper() and "PZ" in str(c).upper()), None)
+    col_total = next(
+        (c for c in df.columns if "TOTAL" in str(c).upper() and "PZ" in str(c).upper()),
+        None,
+    )
     if col_total is None:
-        return pd.DataFrame()
+        return st.session_state.get(clave, pd.DataFrame())
     df = df[[col_fecha, col_total]].copy()
     df.columns = ["FECHA", "TOTAL_PZ"]
     df["FECHA"] = pd.to_datetime(df["FECHA"], dayfirst=True, errors="coerce")
     df["TOTAL_PZ"] = pd.to_numeric(df["TOTAL_PZ"], errors="coerce").fillna(0)
     df = df.dropna(subset=["FECHA"])
     st.session_state[clave] = df
-    st.session_state[clave_fecha] = str(fecha_hoy)
+    st.session_state[clave_ts] = datetime.now().timestamp()
     return df
 
 
-def cargar_datos_calidad(fecha_hoy):
+def cargar_datos_calidad():
     clave = "df_calidad"
-    clave_fecha = "df_calidad_fecha"
+    clave_ts = "df_calidad_ts"
     if (
-        st.session_state.get(clave_fecha) == str(fecha_hoy)
+        _cache_valido(clave_ts)
         and clave in st.session_state
         and not st.session_state[clave].empty
     ):
         return st.session_state[clave]
     df = leer_datos_seguro(ID_LIBRO_CALIDAD, "LISTA_DEFECTOS", header_row=0)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return st.session_state.get(clave, pd.DataFrame())
     df = df.iloc[:, :4].copy()
     df.columns = ["FECHA", "PIEZA", "CANTIDAD", "DEFECTO"]
     df["FECHA"] = pd.to_datetime(df["FECHA"], dayfirst=True, errors="coerce")
@@ -1143,7 +1210,7 @@ def cargar_datos_calidad(fecha_hoy):
     df["AREA"] = df["DEFECTO"].str.strip().str.upper().map(DEFECTO_A_AREA)
     df = df.dropna(subset=["FECHA"])
     st.session_state[clave] = df
-    st.session_state[clave_fecha] = str(fecha_hoy)
+    st.session_state[clave_ts] = datetime.now().timestamp()
     return df
 
 
@@ -1159,15 +1226,19 @@ def _html_calidad_area(df_cal, area_nom, fecha_hoy):
     if area_nom not in areas_con_rechazo:
         return ""
     df_area = df_cal[
-        (df_cal["AREA"] == area_nom) &
-        (df_cal["DEFECTO"].str.strip().str.upper() != "PRUEBA CALIDAD")
+        (df_cal["AREA"] == area_nom)
+        & (df_cal["DEFECTO"].str.strip().str.upper() != "PRUEBA CALIDAD")
     ]
-    esta_sem = int(df_area[
-        (df_area["FECHA"] >= inicio_sem) & (df_area["FECHA"] <= fin_sem)
-    ]["CANTIDAD"].sum())
-    sem_ant = int(df_area[
-        (df_area["FECHA"] >= inicio_sem_ant) & (df_area["FECHA"] <= fin_sem_ant)
-    ]["CANTIDAD"].sum())
+    esta_sem = int(
+        df_area[(df_area["FECHA"] >= inicio_sem) & (df_area["FECHA"] <= fin_sem)][
+            "CANTIDAD"
+        ].sum()
+    )
+    sem_ant = int(
+        df_area[
+            (df_area["FECHA"] >= inicio_sem_ant) & (df_area["FECHA"] <= fin_sem_ant)
+        ]["CANTIDAD"].sum()
+    )
     if sem_ant == 0 and esta_sem == 0:
         color_sem = "#475569"
         tendencia_txt = "sin rechazos esta semana"
@@ -1187,13 +1258,13 @@ def _html_calidad_area(df_cal, area_nom, fecha_hoy):
             tendencia_txt = f"▲ {cambio:.0f}% vs sem. ant."
     return (
         f'<div style="display:flex;justify-content:space-between;align-items:center;'
-        f'background:#0D1B2A;border:1px solid {color_sem}55;border-radius:8px;'
+        f"background:#0D1B2A;border:1px solid {color_sem}55;border-radius:8px;"
         f'padding:clamp(3px,0.5vmin,7px) clamp(8px,1vmin,14px);margin:3px 0;">'
         f'<span style="color:#64748B;font-size:clamp(10px,1.1vmin,15px);font-weight:800;white-space:nowrap;">'
-        f'⬡ RECHAZOS SEM.</span>'
+        f"⬡ RECHAZOS SEM.</span>"
         f'<span style="color:{color_sem};font-size:clamp(12px,1.3vmin,18px);font-weight:900;white-space:nowrap;">'
-        f'{esta_sem} pzas &nbsp;·&nbsp; {tendencia_txt}</span>'
-        f'</div>'
+        f"{esta_sem} pzas &nbsp;·&nbsp; {tendencia_txt}</span>"
+        f"</div>"
     )
 
 
@@ -1202,8 +1273,8 @@ OBJETIVO_RECHAZO_PCT = 5.0
 
 def renderizar_pantalla_calidad(fecha_hoy):
     try:
-        df_cal = cargar_datos_calidad(fecha_hoy)
-        df_vac = cargar_datos_vaciado(fecha_hoy)
+        df_cal = cargar_datos_calidad()
+        df_vac = cargar_datos_vaciado()
 
         _ini_sem, _ = calcular_fechas_semana_corta(fecha_hoy)
         inicio_sem = pd.Timestamp(_ini_sem)
@@ -1212,78 +1283,125 @@ def renderizar_pantalla_calidad(fecha_hoy):
         fin_sem_ant = inicio_sem - timedelta(days=1)
 
         # Separar rechazos reales de pruebas de calidad
-        es_prueba = lambda df: df["DEFECTO"].str.strip().str.upper() == "PRUEBA CALIDAD" if not df.empty else pd.Series(dtype=bool)
+        es_prueba = lambda df: (
+            df["DEFECTO"].str.strip().str.upper() == "PRUEBA CALIDAD"
+            if not df.empty
+            else pd.Series(dtype=bool)
+        )
         df_rechazos = df_cal[~es_prueba(df_cal)] if not df_cal.empty else pd.DataFrame()
-        df_pruebas  = df_cal[es_prueba(df_cal)]  if not df_cal.empty else pd.DataFrame()
+        df_pruebas = df_cal[es_prueba(df_cal)] if not df_cal.empty else pd.DataFrame()
 
         def _suma_rec(desde, hasta):
-            if df_rechazos.empty: return 0
-            return int(df_rechazos[(df_rechazos["FECHA"] >= desde) & (df_rechazos["FECHA"] <= hasta)]["CANTIDAD"].sum())
+            if df_rechazos.empty:
+                return 0
+            return int(
+                df_rechazos[
+                    (df_rechazos["FECHA"] >= desde) & (df_rechazos["FECHA"] <= hasta)
+                ]["CANTIDAD"].sum()
+            )
 
         def _suma_vac(df, desde, hasta):
-            if df is None or df.empty: return 0
-            return int(df[(df["FECHA"] >= desde) & (df["FECHA"] <= hasta)]["TOTAL_PZ"].sum())
+            if df is None or df.empty:
+                return 0
+            return int(
+                df[(df["FECHA"] >= desde) & (df["FECHA"] <= hasta)]["TOTAL_PZ"].sum()
+            )
 
         def _filas_vac(desde, hasta):
-            if df_vac is None or df_vac.empty: return 0
+            if df_vac is None or df_vac.empty:
+                return 0
             return len(df_vac[(df_vac["FECHA"] >= desde) & (df_vac["FECHA"] <= hasta)])
 
         def _filas_pruebas(desde, hasta):
-            if df_pruebas.empty: return 0
-            return len(df_pruebas[(df_pruebas["FECHA"] >= desde) & (df_pruebas["FECHA"] <= hasta)])
+            if df_pruebas.empty:
+                return 0
+            return len(
+                df_pruebas[
+                    (df_pruebas["FECHA"] >= desde) & (df_pruebas["FECHA"] <= hasta)
+                ]
+            )
 
         rechazados_sem = _suma_rec(inicio_sem, fin_sem)
         producidos_sem = _suma_vac(df_vac, inicio_sem, fin_sem)
         rechazados_ant = _suma_rec(inicio_sem_ant, fin_sem_ant)
         producidos_ant = _suma_vac(df_vac, inicio_sem_ant, fin_sem_ant)
 
-        pct_rechazo = (rechazados_sem / producidos_sem * 100) if producidos_sem > 0 else 0.0
+        pct_rechazo = (
+            (rechazados_sem / producidos_sem * 100) if producidos_sem > 0 else 0.0
+        )
         pct_calidad = 100.0 - pct_rechazo
-        pct_rechazo_ant = (rechazados_ant / producidos_ant * 100) if producidos_ant > 0 else 0.0
+        pct_rechazo_ant = (
+            (rechazados_ant / producidos_ant * 100) if producidos_ant > 0 else 0.0
+        )
 
         # Cumplimiento pruebas de calidad
         hoy_ts = pd.Timestamp(fecha_hoy)
         vaciadas_hoy = _filas_vac(hoy_ts, hoy_ts)
-        pruebas_hoy  = _filas_pruebas(hoy_ts, hoy_ts)
+        pruebas_hoy = _filas_pruebas(hoy_ts, hoy_ts)
         vaciadas_sem = _filas_vac(inicio_sem, fin_sem)
-        pruebas_sem  = _filas_pruebas(inicio_sem, fin_sem)
+        pruebas_sem = _filas_pruebas(inicio_sem, fin_sem)
         cumpl_hoy = (pruebas_hoy / vaciadas_hoy * 100) if vaciadas_hoy > 0 else None
         cumpl_sem = (pruebas_sem / vaciadas_sem * 100) if vaciadas_sem > 0 else None
 
         def _color_prueba(pct):
-            if pct is None: return "#94A3B8"
-            if pct >= 100: return "#2ecc71"
-            if pct >= 80:  return "#f1c40f"
+            if pct is None:
+                return "#94A3B8"
+            if pct >= 100:
+                return "#2ecc71"
+            if pct >= 80:
+                return "#f1c40f"
             return "#ff4444"
 
         cp_hoy_color = _color_prueba(cumpl_hoy)
         cp_sem_color = _color_prueba(cumpl_sem)
-        cp_hoy_txt = f"{pruebas_hoy}/{vaciadas_hoy} · {cumpl_hoy:.0f}%" if cumpl_hoy is not None else "Sin vaciadas hoy"
-        cp_sem_txt = f"{pruebas_sem}/{vaciadas_sem} · {cumpl_sem:.0f}%" if cumpl_sem is not None else "Sin datos"
+        cp_hoy_txt = (
+            f"{pruebas_hoy}/{vaciadas_hoy} · {cumpl_hoy:.0f}%"
+            if cumpl_hoy is not None
+            else "Sin vaciadas hoy"
+        )
+        cp_sem_txt = (
+            f"{pruebas_sem}/{vaciadas_sem} · {cumpl_sem:.0f}%"
+            if cumpl_sem is not None
+            else "Sin datos"
+        )
 
         # Semáforo calidad
         if pct_rechazo <= OBJETIVO_RECHAZO_PCT:
-            color_cal = "#2ecc71"; estado_badge = "OBJETIVO CUMPLIDO"; badge_bg = "#0f3b22"
+            color_cal = "#2ecc71"
+            estado_badge = "OBJETIVO CUMPLIDO"
+            badge_bg = "#0f3b22"
         elif pct_rechazo <= 7.0:
-            color_cal = "#f1c40f"; estado_badge = "CERCA DEL LÍMITE"; badge_bg = "#3f3508"
+            color_cal = "#f1c40f"
+            estado_badge = "CERCA DEL LÍMITE"
+            badge_bg = "#3f3508"
         else:
-            color_cal = "#ff4444"; estado_badge = "FUERA DE OBJETIVO"; badge_bg = "#441111"
+            color_cal = "#ff4444"
+            estado_badge = "FUERA DE OBJETIVO"
+            badge_bg = "#441111"
 
         # Ranking defectos (excluye PRUEBA CALIDAD)
         df_sem_rec = (
-            df_rechazos[(df_rechazos["FECHA"] >= inicio_sem) & (df_rechazos["FECHA"] <= fin_sem)]
-            if not df_rechazos.empty else pd.DataFrame()
+            df_rechazos[
+                (df_rechazos["FECHA"] >= inicio_sem) & (df_rechazos["FECHA"] <= fin_sem)
+            ]
+            if not df_rechazos.empty
+            else pd.DataFrame()
         )
         defectos = (
             df_sem_rec.groupby("DEFECTO")["CANTIDAD"].sum().sort_values(ascending=False)
-            if not df_sem_rec.empty else pd.Series(dtype=float)
+            if not df_sem_rec.empty
+            else pd.Series(dtype=float)
         )
         max_def = defectos.max() if len(defectos) > 0 else 1
 
         filas_def = ""
         for defecto, cantidad in defectos.head(7).items():
             area_def = DEFECTO_A_AREA.get(str(defecto).strip().upper(), "")
-            color_area = "#3B82F6" if area_def == "MOLDEO" else "#F59E0B" if area_def == "CORTE" else "#94A3B8"
+            color_area = (
+                "#3B82F6"
+                if area_def == "MOLDEO"
+                else "#F59E0B" if area_def == "CORTE" else "#94A3B8"
+            )
             pct_bar = (cantidad / max_def * 100) if max_def > 0 else 0
             pct_tot = (cantidad / rechazados_sem * 100) if rechazados_sem > 0 else 0
             filas_def += (
@@ -1291,16 +1409,16 @@ def renderizar_pantalla_calidad(fecha_hoy):
                 f'<div style="width:30%;min-width:0;">'
                 f'<span style="font-size:clamp(15px,1.9vmin,28px);font-weight:900;color:#F1F5F9;">{defecto}</span>'
                 f'<span style="margin-left:8px;font-size:clamp(10px,1vmin,14px);color:{color_area};font-weight:700;">{area_def}</span>'
-                f'</div>'
+                f"</div>"
                 f'<div style="flex:1;">'
                 f'<div style="background:#1E293B;border-radius:6px;height:clamp(18px,2.5vmin,36px);overflow:hidden;">'
                 f'<div style="width:{pct_bar:.1f}%;height:100%;background:{color_cal};border-radius:6px;"></div>'
-                f'</div></div>'
+                f"</div></div>"
                 f'<div style="width:14%;text-align:right;white-space:nowrap;">'
                 f'<span style="font-size:clamp(16px,2vmin,30px);font-weight:900;color:#F1F5F9;">{int(cantidad)}</span>'
                 f'<span style="margin-left:6px;font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:700;">{pct_tot:.0f}%</span>'
-                f'</div>'
-                f'</div>'
+                f"</div>"
+                f"</div>"
             )
 
         # Pieza más afectada (siempre visible)
@@ -1312,17 +1430,17 @@ def renderizar_pantalla_calidad(fecha_hoy):
                 f'<div style="flex:0 0 auto;">'
                 f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;">{label}</div>'
                 f'<div style="font-size:clamp(20px,2.8vmin,40px);font-weight:950;color:#F1F5F9;">{pieza}</div>'
-                f'</div>'
+                f"</div>"
                 f'<div style="width:2px;background:#1E293B;align-self:stretch;border-radius:2px;"></div>'
                 f'<div style="flex:0 0 auto;text-align:center;">'
                 f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#64748B;font-weight:800;text-transform:uppercase;">RECHAZOS SEM.</div>'
                 f'<div style="font-size:clamp(24px,3.2vmin,46px);font-weight:950;color:{cant_color};">{cant_sem}</div>'
-                f'</div>'
+                f"</div>"
                 f'<div style="width:2px;background:#1E293B;align-self:stretch;border-radius:2px;"></div>'
                 f'<div style="flex:1;">'
                 f'<span style="font-size:clamp(13px,1.6vmin,22px);font-weight:900;color:{p_color};">{p_txt}</span>'
-                f'</div>'
-                f'</div>'
+                f"</div>"
+                f"</div>"
             )
 
         if not df_sem_rec.empty:
@@ -1332,56 +1450,106 @@ def renderizar_pantalla_calidad(fecha_hoy):
             top_pieza_cant = int(pieza_rechazos.max())
             df_pieza_hist = df_rechazos[df_rechazos["PIEZA"] == top_pieza].copy()
             df_pieza_4sem = df_pieza_hist[
-                (df_pieza_hist["FECHA"] >= inicio_4sem) & (df_pieza_hist["FECHA"] < inicio_sem)
+                (df_pieza_hist["FECHA"] >= inicio_4sem)
+                & (df_pieza_hist["FECHA"] < inicio_sem)
             ]
             if not df_pieza_4sem.empty:
-                df_pieza_4sem["_SEM"] = (df_pieza_4sem["FECHA"] - inicio_4sem).dt.days // 7
+                df_pieza_4sem["_SEM"] = (
+                    df_pieza_4sem["FECHA"] - inicio_4sem
+                ).dt.days // 7
                 prom_4sem = df_pieza_4sem.groupby("_SEM")["CANTIDAD"].sum().mean()
-                cambio_p = ((top_pieza_cant - prom_4sem) / prom_4sem * 100) if prom_4sem > 0 else 0
+                cambio_p = (
+                    ((top_pieza_cant - prom_4sem) / prom_4sem * 100)
+                    if prom_4sem > 0
+                    else 0
+                )
                 if cambio_p <= -10:
-                    p_color = "#2ecc71"; p_txt = f"▼ {abs(cambio_p):.0f}% vs prom. 4 sem. ({prom_4sem:.0f} pzas/sem)"
+                    p_color = "#2ecc71"
+                    p_txt = f"▼ {abs(cambio_p):.0f}% vs prom. 4 sem. ({prom_4sem:.0f} pzas/sem)"
                 elif cambio_p <= 10:
-                    p_color = "#f1c40f"; p_txt = f"≈ similar al promedio 4 sem. ({prom_4sem:.0f} pzas/sem)"
+                    p_color = "#f1c40f"
+                    p_txt = f"≈ similar al promedio 4 sem. ({prom_4sem:.0f} pzas/sem)"
                 else:
-                    p_color = "#ff4444"; p_txt = f"▲ {cambio_p:.0f}% vs prom. 4 sem. ({prom_4sem:.0f} pzas/sem)"
+                    p_color = "#ff4444"
+                    p_txt = (
+                        f"▲ {cambio_p:.0f}% vs prom. 4 sem. ({prom_4sem:.0f} pzas/sem)"
+                    )
             else:
                 df_pieza_antes = df_pieza_hist[df_pieza_hist["FECHA"] < inicio_sem]
                 if not df_pieza_antes.empty:
                     ultima_fecha = df_pieza_antes["FECHA"].max()
-                    ultima_cant = int(df_pieza_hist[df_pieza_hist["FECHA"] == ultima_fecha]["CANTIDAD"].sum())
-                    sem_atras = max(1, (inicio_sem.date() - ultima_fecha.date()).days // 7)
-                    p_color = "#f1c40f"; p_txt = f"Último rechazo: hace {sem_atras} sem. ({ultima_cant} pzas)"
+                    ultima_cant = int(
+                        df_pieza_hist[df_pieza_hist["FECHA"] == ultima_fecha][
+                            "CANTIDAD"
+                        ].sum()
+                    )
+                    sem_atras = max(
+                        1, (inicio_sem.date() - ultima_fecha.date()).days // 7
+                    )
+                    p_color = "#f1c40f"
+                    p_txt = (
+                        f"Último rechazo: hace {sem_atras} sem. ({ultima_cant} pzas)"
+                    )
                 else:
-                    p_color = "#ff4444"; p_txt = "⚠ PRIMER RECHAZO REGISTRADO"
-            pieza_html = _build_pieza_html("PIEZA MÁS AFECTADA", top_pieza, top_pieza_cant, p_color, p_txt, color_cal)
+                    p_color = "#ff4444"
+                    p_txt = "⚠ PRIMER RECHAZO REGISTRADO"
+            pieza_html = _build_pieza_html(
+                "PIEZA MÁS AFECTADA",
+                top_pieza,
+                top_pieza_cant,
+                p_color,
+                p_txt,
+                color_cal,
+            )
         else:
             # Sin rechazos esta semana — mostrar pieza históricamente más problemática como referencia
-            df_hist_4sem = df_rechazos[
-                (df_rechazos["FECHA"] >= inicio_4sem) & (df_rechazos["FECHA"] < inicio_sem)
-            ] if not df_rechazos.empty else pd.DataFrame()
+            df_hist_4sem = (
+                df_rechazos[
+                    (df_rechazos["FECHA"] >= inicio_4sem)
+                    & (df_rechazos["FECHA"] < inicio_sem)
+                ]
+                if not df_rechazos.empty
+                else pd.DataFrame()
+            )
             if not df_hist_4sem.empty:
                 pieza_ref = df_hist_4sem.groupby("PIEZA")["CANTIDAD"].sum().idxmax()
                 cant_ref = int(df_hist_4sem.groupby("PIEZA")["CANTIDAD"].sum().max())
                 pieza_html = _build_pieza_html(
-                    "PIEZA A VIGILAR (HISTORIAL 4 SEM.)", pieza_ref, 0,
-                    "#2ecc71", f"✓ Sin rechazos esta semana · Historial: {cant_ref} pzas en 4 sem.", "#2ecc71"
+                    "PIEZA A VIGILAR (HISTORIAL 4 SEM.)",
+                    pieza_ref,
+                    0,
+                    "#2ecc71",
+                    f"✓ Sin rechazos esta semana · Historial: {cant_ref} pzas en 4 sem.",
+                    "#2ecc71",
                 )
             else:
                 pieza_html = (
                     f'<div style="background:#0D1B2A;border:2px solid #2ecc7144;border-radius:14px;padding:clamp(10px,1.4vmin,18px) clamp(16px,2vw,32px);display:flex;align-items:center;justify-content:center;">'
                     f'<span style="font-size:clamp(16px,2vmin,28px);font-weight:900;color:#2ecc71;">✓ SEMANA LIMPIA — Sin rechazos registrados</span>'
-                    f'</div>'
+                    f"</div>"
                 )
 
         # Tendencia rechazos
         if rechazados_ant > 0:
             cambio = (rechazados_sem - rechazados_ant) / rechazados_ant * 100
             if cambio <= -10:
-                t_color, t_icon, t_txt = "#2ecc71", "▼", f"{abs(cambio):.1f}% menos rechazos que la semana anterior"
+                t_color, t_icon, t_txt = (
+                    "#2ecc71",
+                    "▼",
+                    f"{abs(cambio):.1f}% menos rechazos que la semana anterior",
+                )
             elif cambio <= 10:
-                t_color, t_icon, t_txt = "#f1c40f", "≈", f"Similar a la semana anterior ({rechazados_ant} pzas rechazadas)"
+                t_color, t_icon, t_txt = (
+                    "#f1c40f",
+                    "≈",
+                    f"Similar a la semana anterior ({rechazados_ant} pzas rechazadas)",
+                )
             else:
-                t_color, t_icon, t_txt = "#ff4444", "▲", f"{cambio:.1f}% más rechazos que la semana anterior"
+                t_color, t_icon, t_txt = (
+                    "#ff4444",
+                    "▲",
+                    f"{cambio:.1f}% más rechazos que la semana anterior",
+                )
             sem_ant_txt = (
                 f'<span style="color:{t_color};font-weight:900;font-size:clamp(14px,1.6vmin,22px);">{t_icon} {t_txt}</span>'
                 f'<span style="color:#64748B;font-size:clamp(12px,1.3vmin,18px);margin-left:16px;">Sem. ant.: {rechazados_ant} pzas &nbsp;·&nbsp; {pct_rechazo_ant:.1f}% rechazo</span>'
@@ -1391,8 +1559,8 @@ def renderizar_pantalla_calidad(fecha_hoy):
 
         tabla_defectos = (
             f'<div style="display:flex;flex-direction:column;height:100%;gap:0;">{filas_def}</div>'
-            if filas_def else
-            '<div style="color:#64748B;text-align:center;padding:20px;font-size:clamp(13px,1.5vmin,20px);">Sin rechazos registrados esta semana</div>'
+            if filas_def
+            else '<div style="color:#64748B;text-align:center;padding:20px;font-size:clamp(13px,1.5vmin,20px);">Sin rechazos registrados esta semana</div>'
         )
 
         html = (
@@ -1401,7 +1569,7 @@ def renderizar_pantalla_calidad(fecha_hoy):
             f'<div style="display:flex;justify-content:space-between;align-items:center;">'
             f'<span style="font-size:clamp(18px,2.2vmin,32px);font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">CALIDAD DE LA SEMANA</span>'
             f'<span style="background:{badge_bg};color:{color_cal};border:2px solid {color_cal};border-radius:999px;padding:clamp(4px,0.6vmin,8px) clamp(12px,1.5vw,24px);font-size:clamp(13px,1.5vmin,20px);font-weight:900;">{estado_badge}</span>'
-            f'</div>'
+            f"</div>"
             # Fila superior: % calidad grande + métricas + pruebas
             f'<div style="display:flex;gap:clamp(12px,1.5vw,28px);align-items:stretch;">'
             # Tarjeta % rechazo (hero)
@@ -1409,52 +1577,52 @@ def renderizar_pantalla_calidad(fecha_hoy):
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;">% RECHAZO</div>'
             f'<div style="font-size:clamp(56px,10vmin,130px);font-weight:950;color:{color_cal};line-height:0.95;">{pct_rechazo:.1f}%</div>'
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#94A3B8;font-weight:700;margin-top:6px;">META: &lt; {OBJETIVO_RECHAZO_PCT:.0f}%</div>'
-            f'</div>'
+            f"</div>"
             # Tarjeta métricas
             f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;padding:clamp(12px,1.8vmin,24px) clamp(16px,2vw,32px);flex:1;display:flex;align-items:center;justify-content:space-around;">'
             f'<div style="text-align:center;">'
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">RECHAZADAS</div>'
             f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:{color_cal};line-height:1.1;">{rechazados_sem}</div>'
             f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">piezas</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="width:2px;background:#1E293B;border-radius:2px;align-self:stretch;"></div>'
             f'<div style="text-align:center;">'
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">PRODUCIDAS</div>'
             f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:#F1F5F9;line-height:1.1;">{producidos_sem:,}</div>'
             f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">esta semana</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="width:2px;background:#1E293B;border-radius:2px;align-self:stretch;"></div>'
             f'<div style="text-align:center;">'
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">% CALIDAD</div>'
             f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:#F1F5F9;line-height:1.1;">{pct_calidad:.1f}%</div>'
             f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">objetivo: &ge; {100 - OBJETIVO_RECHAZO_PCT:.0f}%</div>'
-            f'</div>'
-            f'</div>'
+            f"</div>"
+            f"</div>"
             # Tarjeta pruebas de calidad
             f'<div style="background:#0D1B2A;border:2px solid {cp_sem_color}55;border-radius:20px;padding:clamp(12px,1.8vmin,24px) clamp(16px,2vw,28px);display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.2vmin,16px);flex:0 0 auto;">'
             f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;text-align:center;">PRUEBAS DE CALIDAD</div>'
             f'<div style="text-align:center;">'
             f'<div style="font-size:clamp(10px,1.1vmin,14px);color:#475569;font-weight:700;margin-bottom:2px;">HOY</div>'
             f'<div style="font-size:clamp(22px,3vmin,42px);font-weight:950;color:{cp_hoy_color};line-height:1;">{cp_hoy_txt}</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="height:1px;background:#1E293B;"></div>'
             f'<div style="text-align:center;">'
             f'<div style="font-size:clamp(10px,1.1vmin,14px);color:#475569;font-weight:700;margin-bottom:2px;">SEMANA</div>'
             f'<div style="font-size:clamp(22px,3vmin,42px);font-weight:950;color:{cp_sem_color};line-height:1;">{cp_sem_txt}</div>'
-            f'</div>'
-            f'</div>'
-            f'</div>'
-            f'{pieza_html}'
+            f"</div>"
+            f"</div>"
+            f"</div>"
+            f"{pieza_html}"
             # Ranking defectos
             f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;padding:clamp(12px,1.8vmin,22px) clamp(16px,2vw,32px);flex:1;">'
             f'<div style="font-size:clamp(13px,1.5vmin,20px);font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid #1E293B;padding-bottom:8px;margin-bottom:8px;">RANKING DE DEFECTOS</div>'
-            f'{tabla_defectos}'
-            f'</div>'
+            f"{tabla_defectos}"
+            f"</div>"
             # Barra tendencia
             f'<div style="background:#0D1B2A;border:1px solid #1E293B;border-radius:12px;padding:clamp(8px,1.2vmin,14px) clamp(16px,2vw,32px);display:flex;align-items:center;gap:16px;">'
-            f'{sem_ant_txt}'
-            f'</div>'
-            f'</div>'
+            f"{sem_ant_txt}"
+            f"</div>"
+            f"</div>"
         )
         st.markdown(html, unsafe_allow_html=True)
     except Exception as exc:
@@ -1470,6 +1638,10 @@ def main_piso():
     ahora = ahora_local()
     fecha_hoy = ahora.date()
 
+    # Pre-calentamiento: carga calidad en background con TTL de 5 min
+    cargar_datos_calidad()
+    cargar_datos_vaciado()
+
     # --- ENRUTADOR SECUENCIAL POR SESIÓN ---
     secuencia_vistas = [
         "cumplimiento",
@@ -1483,16 +1655,24 @@ def main_piso():
     if "ciclo_idx" not in st.session_state:
         st.session_state.ciclo_idx = 0
     vista_actual = secuencia_vistas[st.session_state.ciclo_idx]
-    st.session_state.ciclo_idx = (st.session_state.ciclo_idx + 1) % len(secuencia_vistas)
+    st.session_state.ciclo_idx = (st.session_state.ciclo_idx + 1) % len(
+        secuencia_vistas
+    )
 
     if vista_actual == "prod_moldeo":
-        renderizar_pantalla_productividad_por_area(fecha_hoy, "MOLDEO Y CORAZONES", "JOSÉ ANTONIO REYES RUBIO")
+        renderizar_pantalla_productividad_por_area(
+            fecha_hoy, "MOLDEO Y CORAZONES", "JOSÉ ANTONIO REYES RUBIO"
+        )
         return
     elif vista_actual == "prod_corte":
-        renderizar_pantalla_productividad_por_area(fecha_hoy, "CORTE", "LUIS DAVID ESPINOSA TORRES")
+        renderizar_pantalla_productividad_por_area(
+            fecha_hoy, "CORTE", "LUIS DAVID ESPINOSA TORRES"
+        )
         return
     elif vista_actual == "prod_ensamble":
-        renderizar_pantalla_productividad_por_area(fecha_hoy, "ENSAMBLE", "ARELI PALOMA FLORES GARFIAS")
+        renderizar_pantalla_productividad_por_area(
+            fecha_hoy, "ENSAMBLE", "ARELI PALOMA FLORES GARFIAS"
+        )
         return
     elif vista_actual == "calidad":
         renderizar_pantalla_calidad(fecha_hoy)
@@ -1504,10 +1684,18 @@ def main_piso():
         df_b = leer_datos_con_respaldo("BDD", 0)
         df_a = leer_datos_con_respaldo("AUDITAR", 0)
     except Exception as exc:
-        st.warning(f"No se pudieron refrescar datos, usando ultimo respaldo disponible: {exc}")
-        df_p = st.session_state.get("ultimo_df_PROGRAMA", leer_respaldo_local("ultimo_df_PROGRAMA"))
-        df_b = st.session_state.get("ultimo_df_BDD", leer_respaldo_local("ultimo_df_BDD"))
-        df_a = st.session_state.get("ultimo_df_AUDITAR", leer_respaldo_local("ultimo_df_AUDITAR"))
+        st.warning(
+            f"No se pudieron refrescar datos, usando ultimo respaldo disponible: {exc}"
+        )
+        df_p = st.session_state.get(
+            "ultimo_df_PROGRAMA", leer_respaldo_local("ultimo_df_PROGRAMA")
+        )
+        df_b = st.session_state.get(
+            "ultimo_df_BDD", leer_respaldo_local("ultimo_df_BDD")
+        )
+        df_a = st.session_state.get(
+            "ultimo_df_AUDITAR", leer_respaldo_local("ultimo_df_AUDITAR")
+        )
 
     col_p = {
         "area": encontrar_columna(df_p, ["AREA", "PROCESO"]),
@@ -1518,7 +1706,9 @@ def main_piso():
     col_b = {
         "pieza": encontrar_columna(df_b, ["PIEZA"]),
         "subproceso": encontrar_columna(
-            df_b, ["SUBPROCESO", "SUB PROCESO", "SUB_PROCESO"], contiene_todos=["SUB", "CESO"]
+            df_b,
+            ["SUBPROCESO", "SUB PROCESO", "SUB_PROCESO"],
+            contiene_todos=["SUB", "CESO"],
         ),
         "proceso": encontrar_columna(df_b, ["PROCESO", "AREA"]),
         "activo": encontrar_columna(df_b, ["ACTIVO", "ESTATUS", "COL_4"]),
@@ -1590,21 +1780,18 @@ def main_piso():
             df_res[col_p["area"]].apply(normalizar_clave) == normalizar_clave(area)
         ].empty
     ]
-    auditoria_pendiente_global = (
-        corte_pendiente is not None
-        and any(
-            not corte_con_captura_area(
-                df_a,
-                col_a,
-                area,
-                fecha_hoy,
-                corte_pendiente["nombre"],
-            )
-            for area in areas_con_programa
+    auditoria_pendiente_global = corte_pendiente is not None and any(
+        not corte_con_captura_area(
+            df_a,
+            col_a,
+            area,
+            fecha_hoy,
+            corte_pendiente["nombre"],
         )
+        for area in areas_con_programa
     )
 
-    df_calidad = cargar_datos_calidad(fecha_hoy)
+    df_calidad = cargar_datos_calidad()
 
     c1, c2 = st.columns(2)
     c3, c4 = st.columns(2)
@@ -1617,12 +1804,16 @@ def main_piso():
                 == normalizar_clave(area_nom)
             ].copy()
             if not df_area.empty:
-                df_area_calculo, moldeo_diferidos_pausados = filtrar_subprocesos_exigibles_area(
-                    df_area,
-                    area_nom,
-                    t_dec,
+                df_area_calculo, moldeo_diferidos_pausados = (
+                    filtrar_subprocesos_exigibles_area(
+                        df_area,
+                        area_nom,
+                        t_dec,
+                    )
                 )
-                moldeo_sin_exigibles = moldeo_diferidos_pausados and df_area_calculo.empty
+                moldeo_sin_exigibles = (
+                    moldeo_diferidos_pausados and df_area_calculo.empty
+                )
                 # --- CÁLCULO DE EFICIENCIA REAL ---
                 total_pzs = pd.to_numeric(
                     df_area_calculo.groupby(col_p["pieza"])[col_p["total"]].first(),
@@ -1672,7 +1863,9 @@ def main_piso():
                     aporte_corte = corte_eval["aporte"]
                     meta_corte_ahora = max(info_horario["meta_corte"], 0.01)
                     esperando_auditoria = True
-                    estado_corte_html = '<div class="mini-pagina">ESPERANDO PRIMERA AUDITORIA</div>'
+                    estado_corte_html = (
+                        '<div class="mini-pagina">ESPERANDO PRIMERA AUDITORIA</div>'
+                    )
                 elif pendiente_incompleto:
                     corte_eval = corte_pendiente
                     corte_prev = corte_anterior_de(corte_eval)
@@ -1686,9 +1879,8 @@ def main_piso():
                 elif cortes_area:
                     corte_eval = cortes_area[-1]
                     corte_prev = corte_anterior_de(corte_eval)
-                    if (
+                    if corte_pendiente and CORTES.index(corte_eval) < CORTES.index(
                         corte_pendiente
-                        and CORTES.index(corte_eval) < CORTES.index(corte_pendiente)
                     ):
                         esperando_auditoria = True
                         corte_eval = corte_pendiente
@@ -1740,7 +1932,9 @@ def main_piso():
                     corte_anterior,
                 )
                 if pct_real_corte is None:
-                    pct_real_corte = max(0.0, min(aporte_corte, pct_real_proceso - base_corte))
+                    pct_real_corte = max(
+                        0.0, min(aporte_corte, pct_real_proceso - base_corte)
+                    )
                 if moldeo_sin_exigibles:
                     ideal_ahora = 0.0
                     meta_corte_ahora = 0.0
@@ -1752,9 +1946,7 @@ def main_piso():
                     else 100
                 )
                 cumplimiento_acumulado = (
-                    (pct_real_proceso / ideal_ahora * 100)
-                    if ideal_ahora > 0
-                    else 100
+                    (pct_real_proceso / ideal_ahora * 100) if ideal_ahora > 0 else 100
                 )
                 meta_auditoria_vigente = max(base_corte + aporte_corte, 0.01)
                 cumplimiento_auditoria_vigente = (
@@ -1839,7 +2031,13 @@ def main_piso():
 
                 # --- MINI TABLA (AVANCE POR PROCESO) ---
                 resumen = df_area_calculo[
-                    [col_p["pieza"], "__BDD_SUBPROCESO", col_p["total"], col_a["real"], "% REAL"]
+                    [
+                        col_p["pieza"],
+                        "__BDD_SUBPROCESO",
+                        col_p["total"],
+                        col_a["real"],
+                        "% REAL",
+                    ]
                 ].copy()
                 resumen[col_p["total"]] = convertir_serie_numerica(
                     resumen[col_p["total"]]
@@ -1855,8 +2053,10 @@ def main_piso():
                     )
                 else:
                     resumen["__P_PROP"] = (
-                        (pd.to_numeric(resumen["% REAL"], errors="coerce").fillna(0) - base_corte)
-                        .clip(lower=0, upper=aporte_corte)
+                        (
+                            pd.to_numeric(resumen["% REAL"], errors="coerce").fillna(0)
+                            - base_corte
+                        ).clip(lower=0, upper=aporte_corte)
                         / meta_corte_ahora
                         * 100
                         if meta_corte_ahora > 0
@@ -1877,13 +2077,19 @@ def main_piso():
                         p_tot = r[col_p["total"]]
                         p_rea = r[col_a["real"]]
                         p_sub = str(r["__BDD_SUBPROCESO"])
-                        p_pct = pd.to_numeric(pd.Series([r["% REAL"]]), errors="coerce").fillna(0).iloc[0]
+                        p_pct = (
+                            pd.to_numeric(pd.Series([r["% REAL"]]), errors="coerce")
+                            .fillna(0)
+                            .iloc[0]
+                        )
 
                         # Color individual basado en la misma regla del 80% del ritmo
                         if usar_ultima_auditoria_para_color:
                             p_prop = p_pct / meta_auditoria_vigente * 100
                         else:
-                            p_avance_corte = max(0.0, min(aporte_corte, p_pct - base_corte))
+                            p_avance_corte = max(
+                                0.0, min(aporte_corte, p_pct - base_corte)
+                            )
                             p_prop = (
                                 (p_avance_corte / meta_corte_ahora * 100)
                                 if meta_corte_ahora > 0
@@ -1908,9 +2114,13 @@ def main_piso():
                     paginas.append(
                         f'<div class="{clase_pagina}">'
                         f'<table class="mini-tabla"><tbody>{filas_pagina}</tbody></table>'
-                        f'</div>'
+                        f"</div>"
                     )
-                clase_track = "mini-track mini-track-unica" if total_paginas == 1 else "mini-track"
+                clase_track = (
+                    "mini-track mini-track-unica"
+                    if total_paginas == 1
+                    else "mini-track"
+                )
                 shift_vh = -8 * total_paginas
                 duracion = total_paginas * 8
                 animacion = (
@@ -1922,7 +2132,7 @@ def main_piso():
                     "\n"
                     f'<div class="{clase_track}" style="--pages:{total_paginas}; --shift:{shift_vh}vh; {animacion}">'
                     f'{"".join(paginas)}'
-                    '</div>'
+                    "</div>"
                 )
                 pagina_html = (
                     f'\n<div class="mini-pagina">{len(resumen)} actividades - rota cada 8s</div>'
@@ -1932,7 +2142,12 @@ def main_piso():
 
                 # --- ÚLTIMO PARO ---
                 paro_html = ""
-                if col_a and col_a.get("area") and col_a.get("fecha") and col_a.get("notas"):
+                if (
+                    col_a
+                    and col_a.get("area")
+                    and col_a.get("fecha")
+                    and col_a.get("notas")
+                ):
                     df_p_a = df_a[
                         df_a[col_a["area"]].apply(normalizar_clave)
                         == normalizar_clave(area_nom)
@@ -1954,7 +2169,9 @@ def main_piso():
                     notas_paro = df_p_a[col_a["notas"]].astype(str)
                     df_paros_reales = df_p_a[
                         notas_paro.str.contains(r"\[", na=False)
-                        & ~notas_paro.str.contains(r"\[SIN PARO\]", case=False, na=False)
+                        & ~notas_paro.str.contains(
+                            r"\[SIN PARO\]", case=False, na=False
+                        )
                     ]
                     hay_paro_real = not df_paros_reales.empty
                     if hay_paro_real:
@@ -2000,8 +2217,8 @@ def main_piso():
                 if moldeo_sin_exigibles and not hay_paro_real:
                     paro_html = (
                         '<div class="paro-alert paro-espera">'
-                        'PROCESOS DIFERIDOS POR FUSION: se evaluan desde 15:00'
-                        '</div>'
+                        "PROCESOS DIFERIDOS POR FUSION: se evaluan desde 15:00"
+                        "</div>"
                     )
                 nota_moldeo_html = (
                     '<div class="nota-moldeo-diferido">Vaciado/Desmoldeo desde 15:00</div>'
