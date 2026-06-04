@@ -2166,7 +2166,7 @@ def main_piso():
                     df_paros_reales = df_p_a[
                         notas_paro.str.contains(r"\[", na=False)
                         & ~notas_paro.str.contains(
-                            r"\[SIN PARO\]", case=False, na=False
+                            r"\[SIN PARO", case=False, na=False
                         )
                     ]
                     hay_paro_real = not df_paros_reales.empty
