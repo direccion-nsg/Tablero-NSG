@@ -35,7 +35,7 @@ st.markdown(
         display: flex; flex-direction: column; justify-content: space-between;
         position: relative; box-sizing: border-box; overflow: hidden;
     }
-    .label-area { font-size: clamp(16px, 1.7vmin, 26px); font-weight: 800; color: white; text-align: center; text-transform: uppercase; }
+    .label-area { font-size: clamp(20px, 2.2vmin, 34px); font-weight: 800; color: white; text-align: center; text-transform: uppercase; }
     .val-pct { font-size: clamp(52px, 10vmin, 120px); font-weight: 900; text-align: center; margin: -4px 0; line-height: 0.9; }
     .bar-container { width: 100%; background-color: #262626; border-radius: 8px; height: clamp(18px, 3.5vmin, 44px); margin-bottom: clamp(4px, 0.8vmin, 10px); position: relative; border: 1px solid #555; overflow: hidden; }
     .bar-fill-ideal { position: absolute; top: 0; left: 0; bottom: 0; background-color: #2d4a57; }
@@ -171,6 +171,30 @@ st.markdown(
         font-size: clamp(12px,1.3vmin,18px); font-weight: 700;
         color: #94A3B8; text-align: center; letter-spacing: 0.03em;
     }
+    @keyframes confettiFall {
+        0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+        100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+    @keyframes countdown30s {
+        from { width: 100%; }
+        to   { width: 0%; }
+    }
+    @keyframes rotarFraseSeg {
+        0%     { opacity: 0; transform: translateY(18px); }
+        3%     { opacity: 1; transform: translateY(0); }
+        7%     { opacity: 1; transform: translateY(0); }
+        10%    { opacity: 0; transform: translateY(-18px); }
+        10.01% { opacity: 0; transform: translateY(18px); }
+        100%   { opacity: 0; transform: translateY(18px); }
+    }
+    .frase-seg {
+        position: absolute; inset: 0; display: flex; align-items: center;
+        justify-content: center; opacity: 0; text-align: center;
+        font-size: clamp(26px, 3.4vmin, 52px); font-weight: 900; color: #E2E8F0;
+        animation: rotarFraseSeg calc(var(--total-frases) * 5s) infinite;
+        padding: 0 16px; line-height: 1.2;
+    }
+    .val-pct { font-size: clamp(58px, 11vmin, 130px); font-weight: 900; text-align: center; margin: -4px 0; line-height: 0.9; }
     </style>
 """,
     unsafe_allow_html=True,
@@ -225,6 +249,18 @@ FRASES_ESPERA_PROGRAMA = [
     "Hoy también podemos mejorar.",
     "El avance se construye paso a paso.",
     "Un buen turno empieza con orden.",
+]
+FRASES_SEGURIDAD = [
+    "🏠 ¡Todos llegamos a casa con nuestra familia!",
+    "🦺 Usa siempre tu equipo de protección personal",
+    "🚶 Mantén los pasillos despejados en todo momento",
+    "👀 Si ves algo inseguro, detente y repórtalo",
+    "💪 ¡Equipo unido, equipo seguro!",
+    "🔧 Revisa tu área antes de iniciar el turno",
+    "⚠️ Reporta condiciones inseguras al instante",
+    "🏆 ¡Seguimos cuidándonos — vamos por los 100 días!",
+    "🧤 Guantes, lentes, calzado — cada uno importa",
+    "🚨 Ante una emergencia: para, avisa, actúa",
 ]
 
 
@@ -856,12 +892,13 @@ def _calcular_aporte_bono(prod_pct):
 def _aporte_bono_html(val):
     """Badge con el aporte calculado — misma fórmula que RRHH usa en nómina."""
     aporte = _calcular_aporte_bono(val)
+    aporte_r = round(aporte, 1)
     _s = "font-weight:900;white-space:nowrap;border-radius:8px;padding:5px 14px;font-size:clamp(13px,1.5vmin,22px);"
-    if aporte >= 30.1:  # prod ≥ ~88% → total ≥ 90.1% → 100% del bono
+    if aporte_r >= 30.0:
         bg, fg, brd = "#0f3b22", "#2ecc71", "#2ecc71"
-    elif aporte >= 15.0:  # prod ≥ 70% → total ≥ 75% → 50% del bono
+    elif aporte_r >= 15.0:
         bg, fg, brd = "#3f3508", "#f1c40f", "#f1c40f"
-    else:  # total < 75% incluso con asistencia perfecta → sin bono
+    else:
         bg, fg, brd = "#441111", "#ff4444", "#ff4444"
     return f'<span style="{_s}background:{bg};color:{fg};border:2px solid {brd};">APORTE: {aporte:.1f}%</span>'
 
@@ -912,11 +949,15 @@ def _tabla_paginada_html(ranking_vals, titulo, color_titulo, pie_nota=None):
             )
         else:
             filas = "".join(
-                f'<tr><td style="padding:0 20px;vertical-align:middle;box-sizing:border-box;overflow:hidden;">'
+                f'<tr><td style="padding:6px 20px;vertical-align:middle;box-sizing:border-box;overflow:hidden;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
                 f'<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{nom}</span>'
-                f'<span style="color:{_color_prod(val)};white-space:nowrap;margin-left:16px;">{val:.1f}%</span>'
-                f"</div></td></tr>"
+                f'<span style="color:{_color_prod(val)};white-space:nowrap;margin-left:16px;font-weight:900;">{val:.1f}%</span>'
+                f'</div>'
+                f'<div style="height:6px;background:#1E293B;border-radius:4px;margin-top:6px;overflow:hidden;">'
+                f'<div style="height:100%;width:{val:.1f}%;background:{_color_prod(val)};border-radius:4px;"></div>'
+                f'</div>'
+                f"</td></tr>"
                 for nom, val in grupo
             )
         paginas_html.append(
@@ -1046,7 +1087,10 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         df_area_sem_raw["__PROD_NUM"] = df_area_sem_raw["__PROD_NUM"].clip(upper=100.0)
         df_hoy = df_hoy_raw
 
-        prod_lider_hoy = df_hoy["__PROD_NUM"].mean() if not df_hoy.empty else 0.0
+        prod_lider_hoy = (
+            df_hoy.groupby(col_colab)["__PROD_NUM"].mean().mean()
+            if not df_hoy.empty else 0.0
+        )
 
         df_diario_op = (
             df_area_sem_raw.groupby([col_colab, "__FECHA_DT"])["__PROD_NUM"]
@@ -1070,9 +1114,10 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
                 return "background:#441111;border:2px solid #ff4444;"
 
         aporte_lider_sem = _calcular_aporte_bono(prod_lider_sem)
-        if aporte_lider_sem >= 30.1:
+        _aporte_r = round(aporte_lider_sem, 1)
+        if _aporte_r >= 30.0:
             color_aporte_lider = "#2ecc71"
-        elif aporte_lider_sem >= 15.0:
+        elif _aporte_r >= 15.0:
             color_aporte_lider = "#f1c40f"
         else:
             color_aporte_lider = "#ff4444"
@@ -1080,10 +1125,25 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         c_hoy = _color_prod(prod_lider_hoy)
         c_sem = _color_prod(prod_lider_sem)
 
+        if prod_lider_sem >= 90:
+            lider_msg = "🌟 ¡EXCELENTE TRABAJO! Tu equipo está brillando esta semana"
+            lider_msg_color = "#2ecc71"
+        elif prod_lider_sem >= 70:
+            lider_msg = "💪 ¡BUEN RITMO! Sigue motivando a tu equipo para llegar a la meta"
+            lider_msg_color = "#f1c40f"
+        elif prod_lider_sem > 0:
+            lider_msg = "🎯 ¡TU EQUIPO TE NECESITA! Es momento de reorganizar y empujar"
+            lider_msg_color = "#ff4444"
+        else:
+            lider_msg = "📋 Sin registros del día — captura tu primera auditoría"
+            lider_msg_color = "#475569"
+
         st.markdown(
             f"""<div class="leader-banner">
                 <div class="leader-title">📊 LÍDER DE ÁREA: {area_objetivo}</div>
                 <div class="leader-name">👨‍✈️ {lider_nombre}</div>
+                <div style="font-size:clamp(14px,1.6vmin,22px);font-weight:800;color:{lider_msg_color};
+                     margin:4px 0 10px 0;letter-spacing:0.02em;">{lider_msg}</div>
                 <div class="leader-metrics">
                     <div class="leader-met-box" style="{_box_style(c_hoy)}">
                         <div style="color:#94A3B8; font-weight:bold; font-size:18px;">EFICIENCIA EQUIPO HOY</div>
@@ -1117,17 +1177,24 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
                 .sort_values("__PROD_NUM", ascending=False)
                 .values.tolist()
             )
+            def _etiqueta(i, nom, val):
+                if i == 0 and val >= 90.0:
+                    return f"👑 {nom}"
+                if val == 100.0:
+                    return f"{nom} 🔥"
+                return nom
+
             if con_aporte:
                 return [
                     (
-                        f"{nom} 🔥" if val == 100.0 else nom,
+                        _etiqueta(i, nom, val),
                         val,
                         _aporte_bono_html(val),
                         f"{dias_por_op.get(nom, 0)} de {total_dias_semana} días laborados",
                     )
-                    for nom, val in ranking
+                    for i, (nom, val) in enumerate(ranking)
                 ]
-            return [(f"{nom} 🔥" if val == 100.0 else nom, val) for nom, val in ranking]
+            return [(_etiqueta(i, nom, val), val) for i, (nom, val) in enumerate(ranking)]
 
         with c1:
             st.markdown(
@@ -1394,31 +1461,42 @@ def renderizar_pantalla_calidad(fecha_hoy):
         )
         max_def = defectos.max() if len(defectos) > 0 else 1
 
+        def _icono_prueba(pct):
+            if pct is None: return "⚪"
+            if pct >= 100: return "✅"
+            if pct >= 80: return "⚠️"
+            return "❌"
+
+        icono_hoy = _icono_prueba(cumpl_hoy)
+        icono_sem = _icono_prueba(cumpl_sem)
+
         filas_def = ""
         for defecto, cantidad in defectos.head(7).items():
             area_def = DEFECTO_A_AREA.get(str(defecto).strip().upper(), "")
-            color_area = (
-                "#3B82F6"
-                if area_def == "MOLDEO"
-                else "#F59E0B" if area_def == "CORTE" else "#94A3B8"
-            )
+            color_area = "#3B82F6" if area_def == "MOLDEO" else "#F59E0B" if area_def == "CORTE" else "#94A3B8"
+            emoji_area = "🔵" if area_def == "MOLDEO" else "🟡" if area_def == "CORTE" else "⚪"
             pct_bar = (cantidad / max_def * 100) if max_def > 0 else 0
             pct_tot = (cantidad / rechazados_sem * 100) if rechazados_sem > 0 else 0
             filas_def += (
-                f'<div style="display:flex;align-items:center;gap:16px;flex:1;border-bottom:1px solid #1E293B;padding:0 4px;">'
-                f'<div style="width:30%;min-width:0;">'
-                f'<span style="font-size:clamp(15px,1.9vmin,28px);font-weight:900;color:#F1F5F9;">{defecto}</span>'
-                f'<span style="margin-left:8px;font-size:clamp(10px,1vmin,14px);color:{color_area};font-weight:700;">{area_def}</span>'
-                f"</div>"
+                f'<div style="display:flex;align-items:center;gap:clamp(12px,1.5vw,24px);'
+                f'min-height:clamp(50px,7vmin,90px);border-bottom:1px solid #1E293B;padding:0 6px;">'
+                f'<div style="width:32%;min-width:0;display:flex;align-items:center;gap:10px;">'
+                f'<span style="font-size:clamp(18px,2.2vmin,32px);">{emoji_area}</span>'
+                f'<div style="min-width:0;">'
+                f'<div style="font-size:clamp(18px,2.3vmin,34px);font-weight:900;color:#F1F5F9;'
+                f'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{defecto}</div>'
+                f'<div style="font-size:clamp(11px,1.2vmin,16px);color:{color_area};font-weight:800;'
+                f'text-transform:uppercase;letter-spacing:0.04em;">{area_def}</div>'
+                f'</div></div>'
                 f'<div style="flex:1;">'
-                f'<div style="background:#1E293B;border-radius:6px;height:clamp(18px,2.5vmin,36px);overflow:hidden;">'
-                f'<div style="width:{pct_bar:.1f}%;height:100%;background:{color_cal};border-radius:6px;"></div>'
-                f"</div></div>"
-                f'<div style="width:14%;text-align:right;white-space:nowrap;">'
-                f'<span style="font-size:clamp(16px,2vmin,30px);font-weight:900;color:#F1F5F9;">{int(cantidad)}</span>'
-                f'<span style="margin-left:6px;font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:700;">{pct_tot:.0f}%</span>'
-                f"</div>"
-                f"</div>"
+                f'<div style="background:#1E293B;border-radius:8px;height:clamp(24px,3.5vmin,48px);overflow:hidden;">'
+                f'<div style="width:{pct_bar:.1f}%;height:100%;background:{color_cal};border-radius:8px;"></div>'
+                f'</div></div>'
+                f'<div style="min-width:clamp(60px,8vw,110px);text-align:right;white-space:nowrap;">'
+                f'<span style="font-size:clamp(22px,2.8vmin,42px);font-weight:950;color:#F1F5F9;">{int(cantidad)}</span>'
+                f'<span style="margin-left:6px;font-size:clamp(13px,1.5vmin,20px);color:#64748B;font-weight:700;">{pct_tot:.0f}%</span>'
+                f'</div>'
+                f'</div>'
             )
 
         # Pieza más afectada (siempre visible)
@@ -1558,70 +1636,95 @@ def renderizar_pantalla_calidad(fecha_hoy):
             sem_ant_txt = '<span style="color:#64748B;font-size:clamp(13px,1.4vmin,18px);">Sin datos de semana anterior</span>'
 
         tabla_defectos = (
-            f'<div style="display:flex;flex-direction:column;height:100%;gap:0;">{filas_def}</div>'
+            f'<div style="display:flex;flex-direction:column;height:100%;">{filas_def}</div>'
             if filas_def
-            else '<div style="color:#64748B;text-align:center;padding:20px;font-size:clamp(13px,1.5vmin,20px);">Sin rechazos registrados esta semana</div>'
+            else (
+                f'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
+                f'flex:1;padding:clamp(16px,3vmin,48px) 0;">'
+                f'<div style="font-size:clamp(40px,6vmin,80px);">✅</div>'
+                f'<div style="font-size:clamp(22px,3vmin,44px);font-weight:950;color:#2ecc71;margin-top:12px;">'
+                f'SEMANA LIMPIA</div>'
+                f'<div style="font-size:clamp(14px,1.7vmin,24px);color:#475569;font-weight:700;margin-top:8px;">'
+                f'Sin rechazos registrados esta semana</div>'
+                f'</div>'
+            )
         )
 
+        _div = lambda: '<div style="width:2px;background:#1E293B;border-radius:2px;align-self:stretch;"></div>'
+        _lbl = lambda t: f'<div style="font-size:clamp(13px,1.5vmin,21px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">{t}</div>'
+        _num_color = lambda v, c: f'<div style="font-size:clamp(38px,5.8vmin,82px);font-weight:950;color:{c};line-height:1;">{v}</div>'
+        _sub = lambda t: f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#475569;font-weight:700;margin-top:2px;">{t}</div>'
+
         html = (
-            f'<div style="background:#0F1720;min-height:96vh;padding:clamp(16px,2vmin,32px) clamp(20px,2.5vw,48px);display:flex;flex-direction:column;gap:clamp(10px,1.5vmin,18px);box-sizing:border-box;">'
+            f'<div style="background:#0F1720;min-height:96vh;padding:clamp(14px,1.8vmin,26px) clamp(18px,2.2vw,40px);'
+            f'display:flex;flex-direction:column;gap:clamp(8px,1.2vmin,14px);box-sizing:border-box;">'
             # Encabezado
             f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-            f'<span style="font-size:clamp(18px,2.2vmin,32px);font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">CALIDAD DE LA SEMANA</span>'
-            f'<span style="background:{badge_bg};color:{color_cal};border:2px solid {color_cal};border-radius:999px;padding:clamp(4px,0.6vmin,8px) clamp(12px,1.5vw,24px);font-size:clamp(13px,1.5vmin,20px);font-weight:900;">{estado_badge}</span>'
-            f"</div>"
-            # Fila superior: % calidad grande + métricas + pruebas
-            f'<div style="display:flex;gap:clamp(12px,1.5vw,28px);align-items:stretch;">'
-            # Tarjeta % rechazo (hero)
-            f'<div style="background:#161E2E;border:3px solid {color_cal};border-radius:20px;padding:clamp(12px,1.8vmin,24px) clamp(16px,2.5vw,40px);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;">'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;">% RECHAZO</div>'
-            f'<div style="font-size:clamp(56px,10vmin,130px);font-weight:950;color:{color_cal};line-height:0.95;">{pct_rechazo:.1f}%</div>'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#94A3B8;font-weight:700;margin-top:6px;">META: &lt; {OBJETIVO_RECHAZO_PCT:.0f}%</div>'
-            f"</div>"
-            # Tarjeta métricas
-            f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;padding:clamp(12px,1.8vmin,24px) clamp(16px,2vw,32px);flex:1;display:flex;align-items:center;justify-content:space-around;">'
-            f'<div style="text-align:center;">'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">RECHAZADAS</div>'
-            f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:{color_cal};line-height:1.1;">{rechazados_sem}</div>'
-            f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">piezas</div>'
-            f"</div>"
-            f'<div style="width:2px;background:#1E293B;border-radius:2px;align-self:stretch;"></div>'
-            f'<div style="text-align:center;">'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">PRODUCIDAS</div>'
-            f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:#F1F5F9;line-height:1.1;">{producidos_sem:,}</div>'
-            f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">esta semana</div>'
-            f"</div>"
-            f'<div style="width:2px;background:#1E293B;border-radius:2px;align-self:stretch;"></div>'
-            f'<div style="text-align:center;">'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;">% CALIDAD</div>'
-            f'<div style="font-size:clamp(32px,4.5vmin,64px);font-weight:950;color:#F1F5F9;line-height:1.1;">{pct_calidad:.1f}%</div>'
-            f'<div style="font-size:clamp(10px,1.1vmin,15px);color:#475569;font-weight:700;">objetivo: &ge; {100 - OBJETIVO_RECHAZO_PCT:.0f}%</div>'
-            f"</div>"
-            f"</div>"
-            # Tarjeta pruebas de calidad
-            f'<div style="background:#0D1B2A;border:2px solid {cp_sem_color}55;border-radius:20px;padding:clamp(12px,1.8vmin,24px) clamp(16px,2vw,28px);display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.2vmin,16px);flex:0 0 auto;">'
-            f'<div style="font-size:clamp(11px,1.2vmin,16px);color:#64748B;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;text-align:center;">PRUEBAS DE CALIDAD</div>'
-            f'<div style="text-align:center;">'
-            f'<div style="font-size:clamp(10px,1.1vmin,14px);color:#475569;font-weight:700;margin-bottom:2px;">HOY</div>'
-            f'<div style="font-size:clamp(22px,3vmin,42px);font-weight:950;color:{cp_hoy_color};line-height:1;">{cp_hoy_txt}</div>'
-            f"</div>"
-            f'<div style="height:1px;background:#1E293B;"></div>'
-            f'<div style="text-align:center;">'
-            f'<div style="font-size:clamp(10px,1.1vmin,14px);color:#475569;font-weight:700;margin-bottom:2px;">SEMANA</div>'
-            f'<div style="font-size:clamp(22px,3vmin,42px);font-weight:950;color:{cp_sem_color};line-height:1;">{cp_sem_txt}</div>'
-            f"</div>"
-            f"</div>"
-            f"</div>"
-            f"{pieza_html}"
+            f'<span style="font-size:clamp(20px,2.4vmin,36px);font-weight:900;color:#94A3B8;'
+            f'text-transform:uppercase;letter-spacing:0.06em;">🔬 CALIDAD DE LA SEMANA</span>'
+            f'<span style="background:{badge_bg};color:{color_cal};border:2px solid {color_cal};'
+            f'border-radius:999px;padding:clamp(4px,0.6vmin,8px) clamp(14px,1.8vw,26px);'
+            f'font-size:clamp(14px,1.6vmin,22px);font-weight:900;">{estado_badge}</span>'
+            f'</div>'
+            # Fila de métricas UNIFICADA — 5 columnas en una sola tarjeta
+            f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;'
+            f'padding:clamp(10px,1.4vmin,20px) clamp(16px,2vw,36px);'
+            f'display:flex;align-items:center;justify-content:space-around;gap:0;">'
+            # % RECHAZO — destacado con color semáforo, borde izquierdo de acento
+            f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);'
+            f'border-left:4px solid {color_cal};padding-left:clamp(12px,1.5vw,24px);">'
+            f'{_lbl("% RECHAZO")}'
+            f'<div style="font-size:clamp(38px,5.5vmin,78px);font-weight:950;color:{color_cal};line-height:1;">{pct_rechazo:.1f}%</div>'
+            f'{_sub(f"META: &lt; {OBJETIVO_RECHAZO_PCT:.0f}%")}'
+            f'</div>'
+            f'{_div()}'
+            # RECHAZADAS
+            f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);">'
+            f'{_lbl("RECHAZADAS")}'
+            f'{_num_color(rechazados_sem, "#F1F5F9")}'
+            f'{_sub("piezas")}'
+            f'</div>'
+            f'{_div()}'
+            # PRODUCIDAS
+            f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);">'
+            f'{_lbl("PRODUCIDAS")}'
+            f'{_num_color(f"{producidos_sem:,}", "#F1F5F9")}'
+            f'{_sub("esta semana")}'
+            f'</div>'
+            f'{_div()}'
+            # % CALIDAD
+            f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);">'
+            f'{_lbl("% CALIDAD")}'
+            f'{_num_color(f"{pct_calidad:.1f}%", "#F1F5F9")}'
+            f'{_sub(f"obj. &ge; {100 - OBJETIVO_RECHAZO_PCT:.0f}%")}'
+            f'</div>'
+            f'{_div()}'
+            # PRUEBAS DE CALIDAD
+            f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);">'
+            f'{_lbl("PRUEBAS CALIDAD")}'
+            f'<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">'
+            f'<div style="font-size:clamp(14px,1.7vmin,24px);font-weight:900;color:{cp_hoy_color};">'
+            f'{icono_hoy} HOY: {cp_hoy_txt}</div>'
+            f'<div style="font-size:clamp(14px,1.7vmin,24px);font-weight:900;color:{cp_sem_color};">'
+            f'{icono_sem} SEM: {cp_sem_txt}</div>'
+            f'</div>'
+            f'</div>'
+            f'</div>'
+            # Pieza más afectada
+            f'{pieza_html}'
             # Ranking defectos
-            f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;padding:clamp(12px,1.8vmin,22px) clamp(16px,2vw,32px);flex:1;">'
-            f'<div style="font-size:clamp(13px,1.5vmin,20px);font-weight:900;color:#3B82F6;text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid #1E293B;padding-bottom:8px;margin-bottom:8px;">RANKING DE DEFECTOS</div>'
-            f"{tabla_defectos}"
-            f"</div>"
+            f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;'
+            f'padding:clamp(12px,1.6vmin,22px) clamp(16px,2vw,32px);flex:1;display:flex;flex-direction:column;">'
+            f'<div style="font-size:clamp(15px,1.8vmin,26px);font-weight:900;color:#3B82F6;'
+            f'text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid #1E293B;'
+            f'padding-bottom:8px;margin-bottom:4px;">📊 RANKING DE DEFECTOS</div>'
+            f'{tabla_defectos}'
+            f'</div>'
             # Barra tendencia
-            f'<div style="background:#0D1B2A;border:1px solid #1E293B;border-radius:12px;padding:clamp(8px,1.2vmin,14px) clamp(16px,2vw,32px);display:flex;align-items:center;gap:16px;">'
-            f"{sem_ant_txt}"
-            f"</div>"
+            f'<div style="background:#0D1B2A;border:1px solid #1E293B;border-radius:12px;'
+            f'padding:clamp(8px,1.2vmin,16px) clamp(16px,2vw,32px);display:flex;align-items:center;gap:16px;">'
+            f'{sem_ant_txt}'
+            f'</div>'
             f"</div>"
         )
         st.markdown(html, unsafe_allow_html=True)
@@ -1629,7 +1732,285 @@ def renderizar_pantalla_calidad(fecha_hoy):
         st.error(f"Error en pantalla de calidad: {exc}")
 
 
-# --- 6. MOTOR PRINCIPAL CON INTERCALADO ---
+# --- 6. SEGURIDAD ---
+DIAS_META_CELEBRACION = 100
+
+
+def cargar_datos_seguridad():
+    clave = "df_seguridad"
+    clave_ts = "df_seguridad_ts"
+    if (
+        _cache_valido(clave_ts)
+        and clave in st.session_state
+        and not st.session_state.get(clave, pd.DataFrame()).empty
+    ):
+        return st.session_state[clave]
+    df = leer_datos_seguro(ID_LIBRO, "SEGURIDAD", header_row=0)
+    if df is None or df.empty:
+        return st.session_state.get(clave, pd.DataFrame())
+    col_fecha = encontrar_columna(df, ["FECHA"])
+    col_area = encontrar_columna(df, ["AREA"])
+    col_tipo = encontrar_columna(df, ["TIPO"])
+    col_desc = encontrar_columna(df, ["DESCRIPCION", "DESC", "DETALLE"])
+    if col_fecha is None:
+        return st.session_state.get(clave, pd.DataFrame())
+    cols = {k: v for k, v in {
+        "FECHA": col_fecha, "AREA": col_area,
+        "TIPO": col_tipo, "DESCRIPCION": col_desc,
+    }.items() if v is not None}
+    df_out = df[[v for v in cols.values()]].copy()
+    df_out.columns = list(cols.keys())
+    df_out["FECHA"] = pd.to_datetime(df_out["FECHA"], dayfirst=True, errors="coerce")
+    df_out = df_out.dropna(subset=["FECHA"]).sort_values("FECHA").reset_index(drop=True)
+    st.session_state[clave] = df_out
+    st.session_state[clave_ts] = datetime.now().timestamp()
+    return df_out
+
+
+def _metricas_seguridad(df, fecha_hoy):
+    fecha_ts = pd.Timestamp(fecha_hoy)
+    if df.empty:
+        return 0, 0, None, []
+    tiene_tipo = "TIPO" in df.columns
+    if tiene_tipo:
+        tipos = df["TIPO"].str.strip().str.upper()
+        df_acc = df[tipos == "ACCIDENTE"].copy()
+        df_ini = df[tipos == "INICIO"].copy()
+        df_hist = df[tipos != "INICIO"].copy()
+    else:
+        df_acc = df.copy()
+        df_ini = pd.DataFrame()
+        df_hist = df.copy()
+    ultimo_acc = df_acc["FECHA"].max() if not df_acc.empty else None
+    dias_hoy = int((fecha_ts - ultimo_acc).days) if ultimo_acc is not None else int((fecha_ts - df["FECHA"].min()).days)
+    fechas_acc = sorted(df_acc["FECHA"].tolist()) if not df_acc.empty else []
+    gaps = []
+    if not df_ini.empty and fechas_acc:
+        g0 = (fechas_acc[0] - df_ini["FECHA"].min()).days
+        if g0 > 0:
+            gaps.append(g0)
+    for i in range(len(fechas_acc) - 1):
+        g = (fechas_acc[i + 1] - fechas_acc[i]).days
+        if g > 0:
+            gaps.append(g)
+    gaps.append(dias_hoy)
+    record = max(gaps) if gaps else dias_hoy
+    historial = df_hist.tail(5).iloc[::-1].to_dict("records")
+    return dias_hoy, record, ultimo_acc, historial
+
+
+def _confetti_html():
+    colors = ["#2ecc71", "#f1c40f", "#3B82F6", "#ff4444", "#a855f7", "#f97316", "#fff", "#e91e8c"]
+    pieces = ""
+    for i in range(80):
+        color = colors[i % len(colors)]
+        left = (i * 1.27) % 100
+        delay = (i * 0.17) % 4
+        dur = 2.5 + (i % 6) * 0.42
+        size = 8 + (i % 5) * 2
+        shape = "border-radius:50%;" if i % 3 == 0 else ""
+        pieces += (
+            f'<div style="position:fixed;left:{left:.1f}%;top:-20px;width:{size}px;height:{size}px;'
+            f'background:{color};{shape}animation:confettiFall {dur:.2f}s {delay:.2f}s linear infinite;'
+            f'z-index:9997;pointer-events:none;"></div>'
+        )
+    return pieces
+
+
+def renderizar_pantalla_seguridad(fecha_hoy):
+    try:
+        df = cargar_datos_seguridad()
+        dias_hoy, record, ultimo_acc, historial = _metricas_seguridad(df, fecha_hoy)
+        if dias_hoy >= 30:
+            color_seg, estado_seg, badge_bg = "#2ecc71", "EXCELENTE", "#0f3b22"
+        elif dias_hoy >= 10:
+            color_seg, estado_seg, badge_bg = "#f1c40f", "EN ALERTA", "#3f3508"
+        else:
+            color_seg, estado_seg, badge_bg = "#ff4444", "ATENCIÓN INMEDIATA", "#441111"
+        es_record_actual = dias_hoy >= record and dias_hoy > 0
+        record_color = "#2ecc71" if es_record_actual else "#f1c40f"
+        record_label = "🏆 ¡NUEVO RÉCORD!" if es_record_actual else "🏆 RÉCORD"
+        faltan = max(0, DIAS_META_CELEBRACION - dias_hoy)
+        pct_meta = min(dias_hoy / DIAS_META_CELEBRACION * 100, 100)
+        meta_txt = "🎉 ¡META DE 100 DÍAS CUMPLIDA!" if dias_hoy >= DIAS_META_CELEBRACION else f"Faltan {faltan} días para la comida 🍽"
+        meta_color = "#2ecc71" if dias_hoy >= DIAS_META_CELEBRACION else "#94A3B8"
+        ultimo_txt = (
+            f'Último accidente: {ultimo_acc.strftime("%d/%m/%Y")}' if ultimo_acc is not None
+            else "Sin accidentes registrados"
+        )
+        # Fondo teñido según semáforo
+        if dias_hoy >= 30:
+            card_bg = "linear-gradient(160deg,#0a1f10 0%,#161E2E 60%)"
+        elif dias_hoy >= 10:
+            card_bg = "linear-gradient(160deg,#1a1500 0%,#161E2E 60%)"
+        else:
+            card_bg = "linear-gradient(160deg,#1a0505 0%,#161E2E 60%)"
+        # Frases rotativas (motivacionales + prevención)
+        n_frases = len(FRASES_SEGURIDAD)
+        dur_total = n_frases * 5
+        frases_divs = "".join(
+            f'<div class="frase-seg" style="animation-delay:{i * 5}s;">{f}</div>'
+            for i, f in enumerate(FRASES_SEGURIDAD)
+        )
+
+        # Anillo SVG de progreso
+        # Incidencias por área
+        area_filas = ""
+        if not df.empty and "AREA" in df.columns and "TIPO" in df.columns:
+            df_ev = df[df["TIPO"].str.strip().str.upper().isin(["ACCIDENTE", "INCIDENTE"])].copy()
+            if not df_ev.empty:
+                df_ev["_M"] = df_ev["FECHA"].dt.month
+                df_ev["_Y"] = df_ev["FECHA"].dt.year
+                for area in AREAS_PISO:
+                    df_a = df_ev[df_ev["AREA"].str.strip().str.upper() == area]
+                    n_mes = len(df_a[(df_a["_M"] == fecha_hoy.month) & (df_a["_Y"] == fecha_hoy.year)])
+                    n_year = len(df_a[df_a["_Y"] == fecha_hoy.year])
+                    c = "#2ecc71" if n_mes == 0 else ("#f1c40f" if n_mes == 1 else "#ff4444")
+                    area_filas += (
+                        f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                        f'padding:clamp(10px,1.3vmin,18px) clamp(10px,1.2vw,18px);border-bottom:1px solid #1E293B;">'
+                        f'<span style="font-size:clamp(18px,2.2vmin,32px);font-weight:800;color:#F1F5F9;">{area}</span>'
+                        f'<div style="display:flex;gap:32px;">'
+                        f'<div style="text-align:center;">'
+                        f'<div style="font-size:clamp(12px,1.3vmin,17px);color:#475569;font-weight:700;text-transform:uppercase;">Mes</div>'
+                        f'<div style="font-size:clamp(26px,3.4vmin,48px);font-weight:950;color:{c};">{n_mes}</div>'
+                        f'</div>'
+                        f'<div style="text-align:center;">'
+                        f'<div style="font-size:clamp(12px,1.3vmin,17px);color:#475569;font-weight:700;text-transform:uppercase;">Año</div>'
+                        f'<div style="font-size:clamp(26px,3.4vmin,48px);font-weight:950;color:#94A3B8;">{n_year}</div>'
+                        f'</div></div></div>'
+                    )
+
+        # Historial
+        hist_filas = ""
+        for ev in historial:
+            f_ev = ev.get("FECHA")
+            t_ev = str(ev.get("TIPO", "")).strip().upper()
+            a_ev = str(ev.get("AREA", "")).strip()
+            d_ev = str(ev.get("DESCRIPCION", "")).strip()
+            c_t = "#ff4444" if t_ev == "ACCIDENTE" else ("#f1c40f" if t_ev == "INCIDENTE" else "#94A3B8")
+            f_str = f_ev.strftime("%d/%m/%Y") if pd.notna(f_ev) else "—"
+            det = d_ev[:38] if d_ev and d_ev not in ("", "nan") else ""
+            hist_filas += (
+                f'<div style="display:flex;align-items:center;gap:14px;'
+                f'padding:clamp(7px,1vmin,14px) 0;border-bottom:1px solid #0D1B2A;">'
+                f'<span style="color:#64748B;font-size:clamp(15px,1.8vmin,24px);white-space:nowrap;font-weight:700;">{f_str}</span>'
+                f'<span style="background:{c_t}22;color:{c_t};border:1px solid {c_t}55;border-radius:999px;'
+                f'padding:4px 12px;font-size:clamp(13px,1.5vmin,20px);font-weight:900;white-space:nowrap;">{t_ev}</span>'
+                f'<span style="color:#94A3B8;font-size:clamp(15px,1.8vmin,24px);font-weight:700;white-space:nowrap;">{a_ev}</span>'
+                f'<span style="color:#475569;font-size:clamp(14px,1.6vmin,21px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{det}</span>'
+                f'</div>'
+            )
+
+        celebracion_html = ""
+        if dias_hoy >= DIAS_META_CELEBRACION:
+            celebracion_html = (
+                f'<div style="position:fixed;inset:0;pointer-events:none;z-index:9996;">'
+                f'{_confetti_html()}'
+                f'</div>'
+                f'<div style="position:fixed;bottom:clamp(60px,8vh,100px);left:50%;transform:translateX(-50%);'
+                f'z-index:9999;background:linear-gradient(135deg,#0a2e1a,#0f3b22);'
+                f'border:4px solid #2ecc71;border-radius:28px;'
+                f'padding:clamp(14px,2vmin,24px) clamp(28px,4vw,60px);text-align:center;'
+                f'box-shadow:0 0 60px #2ecc7166;animation:parpadeo 2s infinite;">'
+                f'<div style="font-size:clamp(24px,3vmin,44px);font-weight:950;color:#2ecc71;'
+                f'text-transform:uppercase;letter-spacing:0.06em;">🎉 ¡{dias_hoy} DÍAS SIN ACCIDENTES!</div>'
+                f'<div style="font-size:clamp(22px,2.6vmin,38px);font-weight:900;color:#fff;margin-top:8px;">'
+                f'🍽&nbsp;&nbsp;¡LA CASA INVITA!&nbsp;&nbsp;🍽</div>'
+                f'</div>'
+            )
+
+        # Anillo SVG — más grande
+        _r, _cx, _cy = 88, 110, 110
+        _circ = 2 * 3.14159 * _r
+        _dash = _circ * pct_meta / 100
+        _gap = _circ - _dash
+        anillo_svg = (
+            f'<div style="position:relative;width:clamp(220px,38vmin,460px);height:clamp(220px,38vmin,460px);margin:0 auto;">'
+            f'<svg viewBox="0 0 220 220" style="width:100%;height:100%;">'
+            f'<circle cx="{_cx}" cy="{_cy}" r="{_r}" fill="none" stroke="#1E293B" stroke-width="14"/>'
+            f'<circle cx="{_cx}" cy="{_cy}" r="{_r}" fill="none" stroke="{color_seg}" stroke-width="14"'
+            f' stroke-dasharray="{_dash:.1f} {_gap:.1f}" stroke-linecap="round"'
+            f' transform="rotate(-90 {_cx} {_cy})"/>'
+            f'</svg>'
+            f'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">'
+            f'<div style="font-size:clamp(80px,14vmin,180px);font-weight:950;color:{color_seg};line-height:0.85;">{dias_hoy}</div>'
+            f'<div style="font-size:clamp(14px,1.7vmin,24px);color:#475569;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">días</div>'
+            f'</div>'
+            f'</div>'
+        )
+
+        no_area = '<div style="color:#475569;text-align:center;padding:28px;font-size:clamp(17px,2vmin,28px);font-weight:700;">Sin incidencias registradas ✓</div>'
+        no_hist = '<div style="color:#2ecc71;text-align:center;padding:18px;font-size:clamp(17px,2vmin,28px);font-weight:700;">✓ Sin eventos registrados</div>'
+
+        # Frases rotativas con animación CSS
+        frases_wrap = (
+            f'<div style="position:relative;height:clamp(68px,8.5vmin,120px);width:100%;overflow:hidden;'
+            f'--total-frases:{n_frases};">'
+            f'<style>.frase-seg{{animation-duration:{dur_total}s!important;}}</style>'
+            f'{frases_divs}'
+            f'</div>'
+        )
+
+        html = (
+            f'<div style="background:#0F1720;min-height:96vh;padding:clamp(12px,1.6vmin,22px) clamp(16px,2vw,36px);'
+            f'display:flex;flex-direction:column;gap:clamp(8px,1.1vmin,14px);box-sizing:border-box;">'
+            # Encabezado
+            f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+            f'<span style="font-size:clamp(28px,3.6vmin,56px);font-weight:900;color:#94A3B8;'
+            f'text-transform:uppercase;letter-spacing:0.06em;">🦺 SEGURIDAD EN PLANTA</span>'
+            f'<span style="background:{badge_bg};color:{color_seg};border:2px solid {color_seg};'
+            f'border-radius:999px;padding:clamp(5px,0.6vmin,10px) clamp(14px,1.8vw,26px);'
+            f'font-size:clamp(14px,1.6vmin,22px);font-weight:900;">{estado_seg}</span>'
+            f'</div>'
+            # Cuerpo
+            f'<div style="display:flex;gap:clamp(12px,1.6vw,24px);flex:1;align-items:stretch;">'
+            # Card izquierdo — fondo teñido + anillo grande
+            f'<div style="background:{card_bg};border:4px solid {color_seg};border-radius:24px;'
+            f'padding:clamp(14px,1.8vmin,26px) clamp(12px,1.8vw,28px);display:flex;flex-direction:column;'
+            f'align-items:center;justify-content:space-between;flex:1.2;text-align:center;">'
+            f'<div style="font-size:clamp(24px,3vmin,46px);color:#64748B;font-weight:900;'
+            f'text-transform:uppercase;letter-spacing:0.06em;">DÍAS SIN ACCIDENTES</div>'
+            f'{anillo_svg}'
+            # Meta + frases rotativas
+            f'<div style="width:100%;">'
+            f'<div style="font-size:clamp(15px,1.8vmin,24px);color:{meta_color};font-weight:800;margin-bottom:6px;">{meta_txt}</div>'
+            f'{frases_wrap}'
+            f'</div>'
+            # Récord
+            f'<div style="width:100%;background:{badge_bg};border:2px solid {record_color};border-radius:14px;'
+            f'padding:clamp(8px,1vmin,14px);text-align:center;">'
+            f'<span style="font-size:clamp(20px,2.5vmin,38px);font-weight:900;color:{record_color};">'
+            f'{record_label}: {record} días</span></div>'
+            f'<div style="font-size:clamp(13px,1.5vmin,20px);color:#475569;font-weight:700;">{ultimo_txt}</div>'
+            f'</div>'
+            # Panel derecho
+            f'<div style="display:flex;flex-direction:column;gap:clamp(10px,1.3vmin,16px);flex:1;">'
+            f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:20px;'
+            f'padding:clamp(12px,1.6vmin,22px);flex:1;">'
+            f'<div style="font-size:clamp(16px,1.9vmin,28px);font-weight:900;color:#3B82F6;'
+            f'text-transform:uppercase;border-bottom:2px solid #1E293B;'
+            f'padding-bottom:8px;margin-bottom:10px;">INCIDENCIAS POR ÁREA</div>'
+            f'{area_filas or no_area}'
+            f'</div>'
+            f'<div style="background:#0D1B2A;border:2px solid #1E293B;border-radius:20px;'
+            f'padding:clamp(12px,1.6vmin,22px);">'
+            f'<div style="font-size:clamp(16px,1.9vmin,28px);font-weight:900;color:#64748B;'
+            f'text-transform:uppercase;border-bottom:1px solid #1E293B;'
+            f'padding-bottom:8px;margin-bottom:10px;">ÚLTIMOS EVENTOS</div>'
+            f'{hist_filas or no_hist}'
+            f'</div>'
+            f'</div>'
+            f'</div>'
+            f'{celebracion_html}'
+            f'</div>'
+        )
+        st.markdown(html, unsafe_allow_html=True)
+    except Exception as exc:
+        st.error(f"Error en pantalla de seguridad: {exc}")
+
+
+# --- 7. MOTOR PRINCIPAL CON INTERCALADO ---
 def main_piso():
     from streamlit_autorefresh import st_autorefresh
 
@@ -1637,6 +2018,22 @@ def main_piso():
     st_autorefresh(interval=REFRESH_INTERVAL_MS, key="refresh")
     ahora = ahora_local()
     fecha_hoy = ahora.date()
+
+    # Reloj fijo + barra countdown — visible en todas las pantallas
+    _segs = REFRESH_INTERVAL_MS // 1000
+    _ts = int(ahora.timestamp())  # cambia cada segundo → fuerza recreación del DOM
+    st.markdown(
+        f'<style>@keyframes cdf{_ts}{{from{{width:100%}}to{{width:0%}}}}</style>'
+        f'<div style="position:fixed;top:10px;right:14px;z-index:10000;'
+        f'background:#0D1B2A;border:1px solid #1E293B;border-radius:10px;'
+        f'padding:5px 16px;font-size:clamp(18px,2.2vmin,30px);font-weight:900;color:#475569;">'
+        f'🕐 {ahora.strftime("%H:%M")}</div>'
+        f'<div data-ts="{_ts}" style="position:fixed;top:0;left:0;right:0;height:6px;z-index:10000;">'
+        f'<div style="height:100%;background:linear-gradient(90deg,#3B82F6,#2ecc71);'
+        f'animation:cdf{_ts} {_segs}s linear forwards;"></div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     # --- ENRUTADOR SECUENCIAL POR SESIÓN ---
     secuencia_vistas = [
@@ -1646,7 +2043,10 @@ def main_piso():
         "prod_corte",
         "cumplimiento",
         "prod_ensamble",
+        "cumplimiento",
         "calidad",
+        "cumplimiento",
+        "seguridad",
     ]
     if "ciclo_idx" not in st.session_state:
         st.session_state.ciclo_idx = 0
@@ -1672,6 +2072,9 @@ def main_piso():
         return
     elif vista_actual == "calidad":
         renderizar_pantalla_calidad(fecha_hoy)
+        return
+    elif vista_actual == "seguridad":
+        renderizar_pantalla_seguridad(fecha_hoy)
         return
 
     # --- VISTA: CUMPLIMIENTO DE PRODUCCIÓN ---
@@ -1726,6 +2129,9 @@ def main_piso():
             <div class="screensaver">
                 <div class="screensaver-box">
                     <div class="screensaver-logo">GRUPO NSG</div>
+                    <div style="font-size:7vw;font-weight:950;color:#2d3f4a;letter-spacing:0.04em;margin-bottom:1.5vh;">
+                        {ahora.strftime("%H:%M")}
+                    </div>
                     <div class="screensaver-status">EN ESPERA DEL PROGRAMA DEL DIA</div>
                     <div class="screensaver-title">Preparando tablero de produccion</div>
                     <div class="screensaver-sub">En cuanto se cargue el programa, el tablero se actualizara automaticamente.</div>
@@ -1788,6 +2194,7 @@ def main_piso():
     )
 
     df_calidad = cargar_datos_calidad()
+    cargar_datos_seguridad()
 
     c1, c2 = st.columns(2)
     c3, c4 = st.columns(2)
@@ -1973,27 +2380,27 @@ def main_piso():
 
                 if indicador_color >= 90:
                     color_cuadro = "#2ecc71"
-                    estado_texto = "VAMOS BIEN"
+                    estado_texto = "✅ VAMOS BIEN"
                     estado_clase = "estado-verde"
                 elif recuperando_atraso:
                     color_cuadro = "#f1c40f"
-                    estado_texto = "VAMOS RECUP."
+                    estado_texto = "📈 RECUPERANDO"
                     estado_clase = "estado-amarillo"
                 elif indicador_color >= 70:
                     color_cuadro = "#f1c40f"
-                    estado_texto = "EN RIESGO"
+                    estado_texto = "⚠ EN RIESGO"
                     estado_clase = "estado-amarillo"
                 else:
                     color_cuadro = "#E32B13"
-                    estado_texto = "VAMOS ATRAS"
+                    estado_texto = "🔴 VAMOS ATRÁS"
                     estado_clase = "estado-rojo"
                 if esperando_auditoria:
                     color_cuadro = "#607d8b"
-                    estado_texto = "ESPERA AUD."
+                    estado_texto = "⏳ ESPERA AUD."
                     estado_clase = "estado-espera"
                 if moldeo_sin_exigibles:
                     color_cuadro = "#607d8b"
-                    estado_texto = "DIFERIDO"
+                    estado_texto = "⏸ DIFERIDO"
                     estado_clase = "estado-espera"
 
                 cierre_turno = (
@@ -2004,15 +2411,15 @@ def main_piso():
                 if cierre_turno:
                     if cumplimiento_acumulado >= 90:
                         color_cuadro = "#2ecc71"
-                        estado_texto = "OBJETIVO OK"
+                        estado_texto = "🏁 OBJETIVO OK"
                         estado_clase = "estado-verde"
                     elif cumplimiento_acumulado >= 80:
                         color_cuadro = "#f1c40f"
-                        estado_texto = "CERCA META"
+                        estado_texto = "⚠ CERCA META"
                         estado_clase = "estado-amarillo"
                     else:
                         color_cuadro = "#E32B13"
-                        estado_texto = "NO CUMPLIDO"
+                        estado_texto = "❌ NO CUMPLIDO"
                         estado_clase = "estado-rojo"
 
                 if esperando_auditoria:
@@ -2118,7 +2525,7 @@ def main_piso():
                     else "mini-track"
                 )
                 shift_vh = -8 * total_paginas
-                duracion = total_paginas * 8
+                duracion = total_paginas * 4
                 animacion = (
                     "animation:none;"
                     if total_paginas == 1
@@ -2131,7 +2538,7 @@ def main_piso():
                     "</div>"
                 )
                 pagina_html = (
-                    f'\n<div class="mini-pagina">{len(resumen)} actividades - rota cada 8s</div>'
+                    f'\n<div class="mini-pagina">{len(resumen)} actividades - rota cada 4s</div>'
                     if total_paginas > 1
                     else ""
                 )
