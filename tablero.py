@@ -1016,7 +1016,10 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
     try:
         col_fecha = encontrar_columna(df_prod, ["FECHA"])
         col_colab = encontrar_columna(df_prod, ["COLABORADOR", "NOMBRE", "OPERADOR"])
-        col_eficiencia = encontrar_columna(df_prod, ["PRODUCTIVIDAD", "EFICIENCIA"])
+        col_eficiencia = (
+            encontrar_columna(df_prod, ["PRODUCTIVIDADR"])
+            or encontrar_columna(df_prod, ["PRODUCTIVIDAD", "EFICIENCIA"])
+        )
         col_actividad = encontrar_columna(df_prod, ["ACTIVIDAD"])
         col_area = encontrar_columna(df_prod, ["AREA", "PROCESO"])
 
