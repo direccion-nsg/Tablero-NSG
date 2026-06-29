@@ -1144,9 +1144,9 @@ def renderizar_pantalla_productividad_por_area(fecha_hoy, area_objetivo, lider_n
         st.markdown(
             f"""<div class="leader-banner">
                 <div class="leader-title">📊 LÍDER DE ÁREA: {area_objetivo}</div>
-                <div class="leader-name">👨‍✈️ {lider_nombre}</div>
+                <div class="leader-name">{"👩‍✈️" if normalizar_clave(lider_nombre.split()[0]) in {"ARELI","MARIA","SANDRA","LAURA","ANA","PATRICIA","ROSA","CARMEN","LUCIA","ELENA"} else "👨‍✈️"} {lider_nombre}</div>
                 <div style="font-size:clamp(14px,1.6vmin,22px);font-weight:800;color:{lider_msg_color};
-                     margin:4px 0 10px 0;letter-spacing:0.02em;">{lider_msg}</div>
+                     margin:4px 0 2px 0;letter-spacing:0.02em;">{lider_msg}</div>
                 <div class="leader-metrics">
                     <div class="leader-met-box" style="{_box_style(c_hoy)}">
                         <div style="color:#94A3B8; font-weight:bold; font-size:18px;">EFICIENCIA EQUIPO HOY</div>
@@ -1341,6 +1341,133 @@ def _html_calidad_area(df_cal, area_nom, fecha_hoy):
 OBJETIVO_RECHAZO_PCT = 5.0
 
 
+def renderizar_pantalla_reconocimiento(fecha_hoy):
+    """Muestra el mejor operador del día y de la semana por área."""
+    df_prod = leer_datos_con_respaldo("REGISTRO", 0, id_libro=ID_LIBRO_PROD)
+    if df_prod.empty:
+        st.markdown(
+            '<div style="background:#0F1720;min-height:96vh;display:flex;align-items:center;'
+            'justify-content:center;"><span style="color:#475569;font-size:2vmin;">Sin datos</span></div>',
+            unsafe_allow_html=True,
+        )
+        return
+    try:
+        col_fecha = encontrar_columna(df_prod, ["FECHA"])
+        col_colab = encontrar_columna(df_prod, ["COLABORADOR", "NOMBRE", "OPERADOR"])
+        col_eficiencia = (
+            encontrar_columna(df_prod, ["PRODUCTIVIDADR"])
+            or encontrar_columna(df_prod, ["PRODUCTIVIDAD", "EFICIENCIA"])
+        )
+        col_actividad = encontrar_columna(df_prod, ["ACTIVIDAD"])
+        col_area = encontrar_columna(df_prod, ["AREA", "PROCESO"])
+        if not col_fecha or not col_colab or not col_eficiencia:
+            return
+
+        df_prod["__FECHA_DT"] = pd.to_datetime(
+            df_prod[col_fecha], dayfirst=True, errors="coerce"
+        ).dt.date
+        df_prod["__PROD_NUM"] = pd.to_numeric(
+            df_prod[col_eficiencia].astype(str).str.replace("%", "").str.strip(),
+            errors="coerce",
+        ).fillna(0.0).clip(upper=100.0)
+        df_prod["__AREA_PISO"] = df_prod.apply(
+            lambda r: clasificar_colaborador_area(r, col_area, col_actividad), axis=1
+        )
+
+        lideres_norm = {normalizar_clave(n) for n in NOMBRES_LIDERES}
+        df_ops = df_prod[
+            ~df_prod[col_colab].astype(str).apply(normalizar_clave).isin(lideres_norm)
+        ].copy()
+
+        inicio_sem, fin_sem = calcular_fechas_semana_corta(fecha_hoy)
+        corte_sem = min(fecha_hoy, fin_sem)
+
+        AREAS = [
+            ("MOLDEO Y CORAZONES", "🔵 MOLDEO", "#3B82F6"),
+            ("CORTE", "🟡 CORTE", "#F59E0B"),
+            ("ENSAMBLE", "🟢 ENSAMBLE", "#10B981"),
+        ]
+
+        def _mejor(df_area, tipo):
+            if df_area.empty:
+                return None, 0.0
+            if tipo == "hoy":
+                df_f = df_area[df_area["__FECHA_DT"] == fecha_hoy]
+                if df_f.empty:
+                    return None, 0.0
+                r = df_f.groupby(col_colab)["__PROD_NUM"].mean().sort_values(ascending=False)
+            else:
+                df_sem = df_area[
+                    (df_area["__FECHA_DT"] >= inicio_sem)
+                    & (df_area["__FECHA_DT"] <= corte_sem)
+                ]
+                if df_sem.empty:
+                    return None, 0.0
+                df_d = df_sem.groupby([col_colab, "__FECHA_DT"])["__PROD_NUM"].mean().reset_index()
+                df_d = df_d[df_d["__PROD_NUM"] > 0]
+                if df_d.empty:
+                    return None, 0.0
+                r = df_d.groupby(col_colab)["__PROD_NUM"].mean().sort_values(ascending=False)
+            return (r.index[0], float(r.iloc[0])) if not r.empty else (None, 0.0)
+
+        def _color_v(v):
+            if v >= 90: return "#2ecc71"
+            if v >= 70: return "#f1c40f"
+            return "#ff4444"
+
+        def _card(area_key, area_label, color, tipo):
+            badge_icon = "⭐" if tipo == "hoy" else "📅"
+            badge_txt = "MEJOR DEL DÍA" if tipo == "hoy" else "MEJOR DE LA SEMANA"
+            trofeo = "🥇" if tipo == "hoy" else "👑"
+            df_a = df_ops[df_ops["__AREA_PISO"] == area_key]
+            nombre, pct = _mejor(df_a, tipo)
+            if nombre is None:
+                return (
+                    f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:24px;'
+                    f'padding:clamp(12px,1.8vmin,24px);text-align:center;flex:1;display:flex;'
+                    f'flex-direction:column;align-items:center;justify-content:center;gap:4px;">'
+                    f'<div style="font-size:clamp(18px,2.4vmin,34px);font-weight:900;color:{color};'
+                    f'text-transform:uppercase;letter-spacing:0.08em;">{area_label}</div>'
+                    f'<div style="font-size:clamp(14px,1.8vmin,26px);font-weight:800;color:#64748B;'
+                    f'text-transform:uppercase;">{badge_icon} {badge_txt}</div>'
+                    f'<div style="color:#334155;font-size:clamp(18px,2.2vmin,30px);margin-top:12px;">Sin datos</div>'
+                    f'</div>'
+                )
+            c = _color_v(pct)
+            nombre_corto = " ".join(str(nombre).split()[:2])
+            return (
+                f'<div style="background:#161E2E;border:2px solid {color}55;border-radius:24px;'
+                f'padding:clamp(12px,1.8vmin,24px);text-align:center;flex:1;display:flex;'
+                f'flex-direction:column;align-items:center;gap:clamp(2px,0.5vmin,6px);">'
+                f'<div style="font-size:clamp(18px,2.4vmin,34px);font-weight:900;color:{color};'
+                f'text-transform:uppercase;letter-spacing:0.08em;">{area_label}</div>'
+                f'<div style="font-size:clamp(14px,1.8vmin,26px);font-weight:800;color:#64748B;'
+                f'text-transform:uppercase;letter-spacing:0.04em;">{badge_icon} {badge_txt}</div>'
+                f'<div style="font-size:clamp(52px,9vmin,130px);line-height:1;margin-top:auto;">{trofeo}</div>'
+                f'<div style="font-size:clamp(26px,4.5vmin,66px);font-weight:950;color:#F1F5F9;'
+                f'line-height:1.1;">{nombre_corto}</div>'
+                f'<div style="font-size:clamp(44px,10vmin,144px);font-weight:950;color:{c};'
+                f'line-height:1;margin-bottom:auto;">{pct:.1f}%</div>'
+                f'</div>'
+            )
+
+        cards_hoy = "".join(_card(ak, al, col, "hoy") for ak, al, col in AREAS)
+        cards_sem = "".join(_card(ak, al, col, "sem") for ak, al, col in AREAS)
+
+        st.markdown(
+            f'<div style="background:#0F1720;min-height:96vh;padding:clamp(10px,1.4vmin,20px) clamp(18px,2.2vw,40px);'
+            f'display:flex;flex-direction:column;gap:clamp(8px,1.2vmin,14px);box-sizing:border-box;">'
+            f'<div style="text-align:center;font-size:clamp(22px,2.8vmin,42px);font-weight:900;color:#F1F5F9;'
+            f'text-transform:uppercase;letter-spacing:0.06em;">🏆 RECONOCIMIENTO AL DESEMPEÑO</div>'
+            f'<div style="display:flex;gap:clamp(10px,1.4vmin,18px);flex:1;">{cards_hoy}</div>'
+            f'<div style="display:flex;gap:clamp(10px,1.4vmin,18px);flex:1;">{cards_sem}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    except Exception as exc:
+        st.error(f"Error en pantalla de reconocimiento: {exc}")
+
+
 def renderizar_pantalla_calidad(fecha_hoy):
     try:
         df_cal = cargar_datos_calidad()
@@ -1403,6 +1530,20 @@ def renderizar_pantalla_calidad(fecha_hoy):
         pct_rechazo_ant = (
             (rechazados_ant / producidos_ant * 100) if producidos_ant > 0 else 0.0
         )
+
+        # Rechazo del mes en curso
+        inicio_mes = pd.Timestamp(fecha_hoy.replace(day=1))
+        rechazados_mes = _suma_rec(inicio_mes, fin_sem)
+        producidos_mes = _suma_vac(df_vac, inicio_mes, fin_sem)
+        pct_rechazo_mes = (
+            (rechazados_mes / producidos_mes * 100) if producidos_mes > 0 else 0.0
+        )
+        if pct_rechazo_mes <= OBJETIVO_RECHAZO_PCT:
+            color_mes = "#2ecc71"
+        elif pct_rechazo_mes <= 7.0:
+            color_mes = "#f1c40f"
+        else:
+            color_mes = "#ff4444"
 
         # Cumplimiento pruebas de calidad
         hoy_ts = pd.Timestamp(fecha_hoy)
@@ -1702,15 +1843,11 @@ def renderizar_pantalla_calidad(fecha_hoy):
             f'{_sub(f"obj. &ge; {100 - OBJETIVO_RECHAZO_PCT:.0f}%")}'
             f'</div>'
             f'{_div()}'
-            # PRUEBAS DE CALIDAD
+            # % RECHAZO MES
             f'<div style="text-align:center;padding:0 clamp(8px,1.2vw,20px);">'
-            f'{_lbl("PRUEBAS CALIDAD")}'
-            f'<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">'
-            f'<div style="font-size:clamp(14px,1.7vmin,24px);font-weight:900;color:{cp_hoy_color};">'
-            f'{icono_hoy} HOY: {cp_hoy_txt}</div>'
-            f'<div style="font-size:clamp(14px,1.7vmin,24px);font-weight:900;color:{cp_sem_color};">'
-            f'{icono_sem} SEM: {cp_sem_txt}</div>'
-            f'</div>'
+            f'{_lbl("% RECHAZO MES")}'
+            f'<div style="font-size:clamp(38px,5.5vmin,78px);font-weight:950;color:{color_mes};line-height:1;">{pct_rechazo_mes:.1f}%</div>'
+            f'{_sub(f"{rechazados_mes} pzas &nbsp;·&nbsp; {producidos_mes:,} prod.")}'
             f'</div>'
             f'</div>'
             # Pieza más afectada
@@ -1723,10 +1860,23 @@ def renderizar_pantalla_calidad(fecha_hoy):
             f'padding-bottom:8px;margin-bottom:4px;">📊 RANKING DE DEFECTOS</div>'
             f'{tabla_defectos}'
             f'</div>'
-            # Barra tendencia
+            # Barra tendencia + pruebas de calidad
             f'<div style="background:#0D1B2A;border:1px solid #1E293B;border-radius:12px;'
-            f'padding:clamp(8px,1.2vmin,16px) clamp(16px,2vw,32px);display:flex;align-items:center;gap:16px;">'
-            f'{sem_ant_txt}'
+            f'padding:clamp(8px,1.2vmin,16px) clamp(16px,2vw,32px);display:flex;align-items:center;'
+            f'justify-content:space-between;gap:16px;">'
+            f'<div style="display:flex;align-items:center;gap:16px;">{sem_ant_txt}</div>'
+            f'<div style="display:flex;align-items:center;gap:clamp(6px,0.8vw,14px);'
+            f'border-left:1px solid #1E293B;padding-left:clamp(12px,1.5vw,24px);flex-shrink:0;">'
+            f'<span style="font-size:clamp(10px,1.2vmin,16px);color:#64748B;font-weight:800;'
+            f'text-transform:uppercase;letter-spacing:0.04em;">PRUEBAS CAL.</span>'
+            f'<span style="font-size:clamp(16px,2vmin,26px);">{icono_hoy}</span>'
+            f'<span style="font-size:clamp(11px,1.3vmin,17px);color:{cp_hoy_color};font-weight:900;">'
+            f'HOY&nbsp;{cp_hoy_txt}</span>'
+            f'<span style="color:#334155;font-size:clamp(14px,1.6vmin,20px);">·</span>'
+            f'<span style="font-size:clamp(16px,2vmin,26px);">{icono_sem}</span>'
+            f'<span style="font-size:clamp(11px,1.3vmin,17px);color:{cp_sem_color};font-weight:900;">'
+            f'SEM&nbsp;{cp_sem_txt}</span>'
+            f'</div>'
             f'</div>'
             f"</div>"
         )
@@ -2046,6 +2196,7 @@ def main_piso():
         "prod_corte",
         "cumplimiento",
         "prod_ensamble",
+        "reconocimiento",
         "cumplimiento",
         "calidad",
         "cumplimiento",
@@ -2072,6 +2223,9 @@ def main_piso():
         renderizar_pantalla_productividad_por_area(
             fecha_hoy, "ENSAMBLE", "ARELI PALOMA FLORES GARFIAS"
         )
+        return
+    elif vista_actual == "reconocimiento":
+        renderizar_pantalla_reconocimiento(fecha_hoy)
         return
     elif vista_actual == "calidad":
         renderizar_pantalla_calidad(fecha_hoy)
@@ -2672,6 +2826,7 @@ def main_piso():
                     """,
                     unsafe_allow_html=True,
                 )
+
 
 
 if __name__ == "__main__":
