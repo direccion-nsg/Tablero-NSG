@@ -220,6 +220,9 @@ DEFECTO_A_AREA = {
 }
 TIMEZONE = "America/Mexico_City"
 AREAS_PISO = ["MOLDEO", "CORAZONES", "CORTE", "ENSAMBLE"]
+SUBS_HERRAJE = {"Ensamble de Pieza", "Empaque de pieza"}
+MODO_SIN_ENSAMBLE = "SIN ENSAMBLE"
+MODO_SOLO_ENSAMBLE = "SOLO ENSAMBLE"
 REFRESH_INTERVAL_MS = 30 * 1000  # Rotación optimizada a cada 30 segundos
 MINI_FILAS_POR_PAGINA = 1
 PROD_ROWS_POR_PAGINA = 4  # filas visibles por página en tablas gigantes
@@ -717,6 +720,15 @@ def calcular_fechas_semana_corta(fecha_base):
     return inicio_semana, fin_semana
 
 
+def filtrar_subs_por_modo(subs, modo):
+    modo_n = str(modo).strip().upper() if pd.notna(modo) and modo != "" else ""
+    if modo_n == MODO_SIN_ENSAMBLE:
+        return [s for s in subs if s not in SUBS_HERRAJE]
+    if modo_n == MODO_SOLO_ENSAMBLE:
+        return [s for s in subs if s in SUBS_HERRAJE]
+    return list(subs)
+
+
 # --- 3. MOTOR ---
 def obtener_datos_unificados(df_aud, df_prog, df_bdd, col_p, col_b, fecha):
     try:
@@ -807,6 +819,18 @@ def obtener_datos_unificados(df_aud, df_prog, df_bdd, col_p, col_b, fecha):
             df_base[col_p["area"]].apply(normalizar_clave)
             == df_base["__BDD_PROCESO"].apply(normalizar_clave)
         ]
+
+        col_modo = col_p.get("modo_herraje")
+        if col_modo and col_modo in df_base.columns:
+            mask_ensamble = df_base[col_p["area"]].apply(normalizar_clave) == "ENSAMBLE"
+            modo_vals = df_base[col_modo].fillna("").astype(str).str.strip().str.upper()
+            mask_sin = mask_ensamble & (modo_vals == MODO_SIN_ENSAMBLE)
+            mask_solo = mask_ensamble & (modo_vals == MODO_SOLO_ENSAMBLE)
+            mask_excluir = (
+                (mask_sin & df_base["__BDD_SUBPROCESO"].isin(SUBS_HERRAJE))
+                | (mask_solo & ~df_base["__BDD_SUBPROCESO"].isin(SUBS_HERRAJE))
+            )
+            df_base = df_base[~mask_excluir]
 
         df_uni = pd.merge(
             df_base,
@@ -2258,6 +2282,7 @@ def main_piso():
         "pieza": encontrar_columna(df_p, ["PIEZA"]),
         "fecha": encontrar_columna(df_p, ["FECHA"]),
         "total": encontrar_columna(df_p, ["TOTAL"]),
+        "modo_herraje": encontrar_columna(df_p, ["MODO HERRAJE", "MODO_HERRAJE"]),
     }
     col_b = {
         "pieza": encontrar_columna(df_b, ["PIEZA"]),
