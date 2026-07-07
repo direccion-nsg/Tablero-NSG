@@ -1,3 +1,4 @@
+import os
 import time
 import pandas as pd
 import gspread
@@ -17,15 +18,15 @@ SCOPE = [
 def obtener_cliente_google():
     """Autentica y devuelve el cliente de Google Sheets una sola vez por sesión."""
     try:
-        # 1. Intentar leer desde los Secrets de la nube de Streamlit
+        # 1. Si existe el archivo local, usarlo de inmediato (desarrollo)
+        if os.path.exists(JSON_FILE):
+            creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, SCOPE)
+            return gspread.authorize(creds)
+
+        # 2. Si no existe, buscar en Secrets de Streamlit (nube)
         if "gcp_service_account" in st.secrets:
             info_creds = dict(st.secrets["gcp_service_account"])
             creds = ServiceAccountCredentials.from_json_keyfile_dict(info_creds, SCOPE)
-            return gspread.authorize(creds)
-
-        # 2. Si no está en la nube, intentar leer el archivo local para desarrollo
-        else:
-            creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, SCOPE)
             return gspread.authorize(creds)
 
     except Exception as exc:
@@ -67,10 +68,13 @@ def leer_datos_seguro(id_o_nombre_libro, name=None, header_row=0, cache_version=
         if not datos:
             return pd.DataFrame()
 
-        df = pd.DataFrame(datos)
-        if header_row < len(df):
-            df.columns = df.iloc[header_row]
-            df = df.iloc[header_row + 1 :].reset_index(drop=True)
+        if header_row >= len(datos):
+            return pd.DataFrame()
+        encabezados = [
+            str(nombre).strip().upper() if str(nombre).strip() else f"COL_{i}"
+            for i, nombre in enumerate(datos[header_row])
+        ]
+        df = pd.DataFrame(datos[header_row + 1 :], columns=encabezados)
         return df
     except Exception as exc:
         st.error(f"No se pudo leer la hoja '{name}': {exc}")
