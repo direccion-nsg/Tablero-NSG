@@ -1432,7 +1432,10 @@ def renderizar_pantalla_reconocimiento(fecha_hoy):
                 if df_d.empty:
                     return None, 0.0
                 r = df_d.groupby(col_colab)["__PROD_NUM"].mean().sort_values(ascending=False)
-            return (r.index[0], float(r.iloc[0])) if not r.empty else (None, 0.0)
+            if r.empty:
+                return None, 0.0
+            best_pct = float(r.iloc[0])
+            return (r.index[0], best_pct) if best_pct >= 70.0 else (None, 0.0)
 
         def _color_v(v):
             if v >= 90: return "#2ecc71"
@@ -1446,6 +1449,7 @@ def renderizar_pantalla_reconocimiento(fecha_hoy):
             df_a = df_ops[df_ops["__AREA_PISO"] == area_key]
             nombre, pct = _mejor(df_a, tipo)
             if nombre is None:
+                periodo_txt = "hoy" if tipo == "hoy" else "esta semana"
                 return (
                     f'<div style="background:#161E2E;border:2px solid #1E293B;border-radius:24px;'
                     f'padding:clamp(12px,1.8vmin,24px);text-align:center;flex:1;display:flex;'
@@ -1454,7 +1458,11 @@ def renderizar_pantalla_reconocimiento(fecha_hoy):
                     f'text-transform:uppercase;letter-spacing:0.08em;">{area_label}</div>'
                     f'<div style="font-size:clamp(14px,1.8vmin,26px);font-weight:800;color:#64748B;'
                     f'text-transform:uppercase;">{badge_icon} {badge_txt}</div>'
-                    f'<div style="color:#334155;font-size:clamp(18px,2.2vmin,30px);margin-top:12px;">Sin datos</div>'
+                    f'<div style="font-size:clamp(44px,8vmin,110px);line-height:1;margin-top:8px;">🎯</div>'
+                    f'<div style="font-size:clamp(16px,2.2vmin,30px);font-weight:700;color:#64748B;'
+                    f'line-height:1.3;margin-top:4px;">¡El área aún no alcanza<br>el mínimo {periodo_txt}!</div>'
+                    f'<div style="font-size:clamp(18px,2.8vmin,40px);font-weight:900;color:#f1c40f;'
+                    f'margin-top:4px;">Meta: superar el 70%</div>'
                     f'</div>'
                 )
             c = _color_v(pct)
